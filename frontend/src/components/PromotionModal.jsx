@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { academicsService } from '../services/academics';
+import { Select } from './Select';
 import { X, ArrowUpRight, AlertCircle, CheckCircle2, Loader2, Users } from 'lucide-react';
 
 export const PromotionModal = ({ isOpen, onClose, onPromoted }) => {
@@ -192,44 +193,44 @@ export const PromotionModal = ({ isOpen, onClose, onPromoted }) => {
                   <label className="block text-xs font-semibold text-[#1E293B] dark:text-slate-200 mb-1">
                     Current Section
                   </label>
-                  <select
+                  <Select
                     value={sourceUnitId}
                     onChange={(e) => {
                       setSourceUnitId(e.target.value);
                       setSelectedStudents({});
                     }}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-xs text-[#1E293B] dark:text-slate-100 focus:ring-2 focus:ring-[#FACC15]"
-                  >
-                    <option value="">All Active Sections</option>
-                    {units
-                      .filter((u) => u.unit_type === 'SECTION')
-                      .map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.parent_name ? `${u.parent_name} - ${u.name}` : u.name}
-                        </option>
-                      ))}
-                  </select>
+                    placeholder="All Active Sections"
+                    options={[
+                      { value: '', label: 'All Active Sections' },
+                      ...units
+                        .filter((u) => u.unit_type === 'SECTION')
+                        .map((u) => ({
+                          value: u.id,
+                          label: u.parent_name ? `${u.parent_name} - ${u.name}` : u.name,
+                        })),
+                    ]}
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-[#1E293B] dark:text-slate-200 mb-1">
                     Target Section *
                   </label>
-                  <select
+                  <Select
                     value={targetUnitId}
                     onChange={(e) => setTargetUnitId(e.target.value)}
                     required
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-xs text-[#1E293B] dark:text-slate-100 focus:ring-2 focus:ring-[#FACC15]"
-                  >
-                    <option value="">Select Target Unit</option>
-                    {units
-                      .filter((u) => u.unit_type === 'SECTION')
-                      .map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.parent_name ? `${u.parent_name} - ${u.name}` : u.name}
-                        </option>
-                      ))}
-                  </select>
+                    placeholder="Select Target Unit"
+                    options={[
+                      { value: '', label: 'Select Target Unit' },
+                      ...units
+                        .filter((u) => u.unit_type === 'SECTION')
+                        .map((u) => ({
+                          value: u.id,
+                          label: u.parent_name ? `${u.parent_name} - ${u.name}` : u.name,
+                        })),
+                    ]}
+                  />
                 </div>
 
                 <div>

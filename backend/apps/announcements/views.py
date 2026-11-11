@@ -47,22 +47,14 @@ class AnnouncementViewSet(ViewSet):
         serializer = CreateAnnouncementInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        target_unit_id = serializer.validated_data.get('target_academic_unit_id')
-        if target_unit_id:
-            # Requires announcements.create_class OR announcements.create_global
-            if not has_perm(request.user, 'announcements.create_class') and not has_perm(request.user, 'announcements.create_global'):
-                return Response({
-                    "success": False,
-                    "error": {"code": "PERMISSION_DENIED", "message": "Permission denied for class-targeted announcements."}
-                }, status=status.HTTP_403_FORBIDDEN)
-        else:
-            # Requires announcements.create_global
-            if not has_perm(request.user, 'announcements.create_global'):
-                return Response({
-                    "success": False,
-                    "error": {"code": "PERMISSION_DENIED", "message": "Permission denied for global announcements."}
-                }, status=status.HTTP_403_FORBIDDEN)
+        # Non-negotiable rule: Only administrators can create announcements
+        if not has_perm(request.user, 'announcements.create_global'):
+            return Response({
+                "success": False,
+                "error": {"code": "PERMISSION_DENIED", "message": "Only administrators can create announcements."}
+            }, status=status.HTTP_403_FORBIDDEN)
 
+        target_unit_id = serializer.validated_data.get('target_academic_unit_id')
         announcement = create_announcement(
             tenant_db=tenant_db,
             title=serializer.validated_data['title'],

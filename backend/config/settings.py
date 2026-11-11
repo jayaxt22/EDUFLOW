@@ -258,6 +258,8 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
     'x-tenant-slug',
+    'x-access-token',
+    'x-refresh-token',
 ]
 CORS_EXPOSE_HEADERS = [
     'x-access-token',

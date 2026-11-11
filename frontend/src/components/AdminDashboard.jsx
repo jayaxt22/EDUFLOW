@@ -10,6 +10,7 @@ import { StudentDirectoryView } from './StudentDirectoryView';
 import { AttendanceView } from './AttendanceView';
 import { ExaminationsView } from './ExaminationsView';
 import { FeesFinanceView } from './FeesFinanceView';
+import { AvailableSoonView } from './AvailableSoonView';
 import { AnnouncementsView } from './AnnouncementsView';
 import { DashboardView } from './DashboardView';
 import { ProfilePage } from './ProfilePage';
@@ -157,13 +158,15 @@ export const AdminDashboard = () => {
       id: 'exams',
       label: 'Examinations',
       icon: Award,
-      show: hasPermission('examinations.read') && !isStudent,
+      badge: 'Soon',
+      show: !isStudent,
     },
     {
       id: 'fees',
       label: isStudent ? 'My Fees' : 'Finance & Fees',
       icon: DollarSign,
-      show: hasPermission('fees.structures_crud') || hasPermission('fees.read_own'),
+      badge: 'Soon',
+      show: true,
     },
     {
       id: 'announcements',
@@ -254,14 +257,27 @@ export const AdminDashboard = () => {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                  className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
                     isActive
                       ? 'bg-[#FACC15] text-slate-900 font-bold shadow-xs'
                       : 'text-[#64748B] dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 dark:hover:text-white'
                   }`}
                 >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  <span className="truncate">{item.label}</span>
+                  <div className="flex items-center gap-3 truncate">
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                        isActive
+                          ? 'bg-slate-900/15 text-slate-900 font-extrabold'
+                          : 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/50'
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -625,11 +641,35 @@ export const AdminDashboard = () => {
               <AttendanceView user={user} onNavigateTab={setActiveTab} />
             )}
 
-            {/* View 6: Examinations (Phase 5) */}
-            {activeTab === 'exams' && <ExaminationsView />}
+            {/* View 6: Examinations (Phase 5 - Available Soon) */}
+            {activeTab === 'exams' && (
+              <AvailableSoonView
+                moduleName="Examinations & Grading"
+                description="The centralized examinations management, marks matrix entry, and student report card generation system is currently being finalized for your institution and will be available soon."
+                icon={Award}
+                features={[
+                  "Multi-subject examination schedules and timetables",
+                  "Direct student marks matrix entry per section",
+                  "Customizable 10-point & letter grade scales",
+                  "Automated student report cards & score rankings"
+                ]}
+              />
+            )}
 
-            {/* View 7: Fees & Finance (Phase 6) */}
-            {activeTab === 'fees' && <FeesFinanceView />}
+            {/* View 7: Fees & Finance (Phase 6 - Available Soon) */}
+            {activeTab === 'fees' && (
+              <AvailableSoonView
+                moduleName="Finance & Fee Management"
+                description="The institutional fee structure configuration, student invoice billing, and payment collection module is currently being prepared and will be activated soon."
+                icon={DollarSign}
+                features={[
+                  "Annual and term-based fee structure configuration",
+                  "Automated student invoice generation and balance tracking",
+                  "Partial & full payment collection recording",
+                  "Institutional revenue, dues, and payment breakdown reports"
+                ]}
+              />
+            )}
 
             {/* View 8: Announcements (Phase 7) */}
             {activeTab === 'announcements' && <AnnouncementsView />}

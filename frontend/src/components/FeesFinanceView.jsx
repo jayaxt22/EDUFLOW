@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { feesService } from '../services/fees';
 import { userService } from '../services/users';
 import { useAuth } from '../context/AuthContext';
+import { Select } from './Select';
 import {
   DollarSign,
   CreditCard,
@@ -368,16 +369,16 @@ export const FeesFinanceView = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-[#1E293B] dark:text-slate-200 mb-1">Payment Method</label>
-                <select
+                <Select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-xs text-[#1E293B] dark:text-slate-100"
-                >
-                  <option value="CASH">Cash</option>
-                  <option value="CARD">Credit/Debit Card</option>
-                  <option value="BANK_TRANSFER">Bank Transfer</option>
-                  <option value="ONLINE">Online Portal</option>
-                </select>
+                  options={[
+                    { value: 'CASH', label: 'Cash' },
+                    { value: 'CARD', label: 'Credit/Debit Card' },
+                    { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
+                    { value: 'ONLINE', label: 'Online Portal' },
+                  ]}
+                />
               </div>
 
               <div>
@@ -432,21 +433,18 @@ export const FeesFinanceView = () => {
             <form onSubmit={handleCreateInvoiceSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-[#1E293B] dark:text-slate-200 mb-1">Student *</label>
-                <select
+                <Select
                   value={newInvoice.student_membership}
                   onChange={(e) => setNewInvoice({ ...newInvoice, student_membership: e.target.value })}
                   required
-                  className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-xs text-[#1E293B] dark:text-slate-100"
-                >
-                  {students.map((s) => (
-                    <option key={s.id} value={s.id}>{s.full_name} ({s.email || s.username})</option>
-                  ))}
-                </select>
+                  placeholder="Select student..."
+                  options={students.map((s) => ({ value: s.id, label: `${s.full_name} (${s.email || s.username})` }))}
+                />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-[#1E293B] dark:text-slate-200 mb-1">Fee Template (Optional)</label>
-                <select
+                <Select
                   value={newInvoice.fee_structure}
                   onChange={(e) => {
                     const struct = structures.find((st) => st.id === e.target.value);
@@ -456,13 +454,12 @@ export const FeesFinanceView = () => {
                       total_amount: struct ? struct.amount : newInvoice.total_amount,
                     });
                   }}
-                  className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-xs text-[#1E293B] dark:text-slate-100"
-                >
-                  <option value="">Custom Invoice</option>
-                  {structures.map((st) => (
-                    <option key={st.id} value={st.id}>{st.name} (${st.amount})</option>
-                  ))}
-                </select>
+                  placeholder="Custom Invoice"
+                  options={[
+                    { value: '', label: 'Custom Invoice' },
+                    ...structures.map((st) => ({ value: st.id, label: `${st.name} ($${st.amount})` })),
+                  ]}
+                />
               </div>
 
               <div>

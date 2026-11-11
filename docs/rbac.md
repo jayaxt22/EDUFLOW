@@ -12,11 +12,11 @@ fees.structures_crud, fees.invoices_crud, fees.payments_crud, fees.refunds_crud,
 teacher.my_class.view
 
 ## Role → permission mapping (seed)
-ADMIN: everything.
+ADMIN: everything (sole role permitted to create or forward announcements).
 TEACHER: users.read_own, users.update_own, students.read_directory, allocations.list_own,
          enrollments.list_own, teacher.my_class.view (conditional), attendance.mark_class,
          attendance.mark_self, attendance.read_class, attendance.read_own, attendance.correct (same-day),
-         announcements.create_class, announcements.forward, announcements.read.
+         announcements.read.
 STUDENT: users.read_own, users.update_own, attendance.read_own, fees.read_own, announcements.read.
 STAFF (FINANCE): users.read_own, users.update_own, students.read_directory, attendance.mark_self, attendance.read_own, fees.*, announcements.read.
 STAFF (GENERAL): users.read_own, users.update_own, students.read_directory, attendance.mark_self, attendance.read_own, announcements.read.

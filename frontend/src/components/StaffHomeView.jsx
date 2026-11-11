@@ -32,8 +32,13 @@ export const StaffHomeView = ({ onNavigateTab, user }) => {
         {isFinance && (
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between">
             <div>
-              <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-4">
-                <DollarSign className="w-6 h-6" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <DollarSign className="w-6 h-6" />
+                </div>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/50">
+                  Soon
+                </span>
               </div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 mb-1">Finance & Billing</h3>
               <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">

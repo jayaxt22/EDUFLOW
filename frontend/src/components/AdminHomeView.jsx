@@ -165,15 +165,20 @@ export const AdminHomeView = ({
 
           <button
             onClick={() => onNavigateTab('fees')}
-            className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-yellow-400 dark:hover:border-yellow-400 hover:bg-yellow-50/40 dark:hover:bg-slate-700/60 text-left transition flex items-center gap-3.5"
+            className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-yellow-400 dark:hover:border-yellow-400 hover:bg-yellow-50/40 dark:hover:bg-slate-700/60 text-left transition flex items-center justify-between gap-3.5"
           >
-            <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-              <DollarSign className="w-5 h-5" />
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-800 dark:text-slate-100">Finance & Fees</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Invoices, Receipts & Dues</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-gray-800 dark:text-slate-100">Finance & Fees</p>
-              <p className="text-xs text-gray-500 dark:text-slate-400">Invoices, Receipts & Dues</p>
-            </div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/50">
+              Soon
+            </span>
           </button>
 
           <button

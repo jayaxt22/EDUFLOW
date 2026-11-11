@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { announcementService } from '../services/announcements';
 import { academicsService } from '../services/academics';
+import { Select } from './Select';
 import {
   Megaphone,
   Plus,
@@ -40,10 +41,12 @@ export const AnnouncementsView = () => {
   const [forwardUnitId, setForwardUnitId] = useState('');
   const [forwarding, setForwarding] = useState(false);
 
-  const canCreateGlobal = hasPermission('announcements.create_global');
-  const canCreateClass = hasPermission('announcements.create_class');
-  const canForward = hasPermission('announcements.forward');
-  const canPost = canCreateGlobal || canCreateClass;
+  // Non-negotiable requirement: Only administrators can create or forward announcements; teachers and students can read only
+  const isAdmin = user?.role === 'ADMIN' || user?.membership?.role === 'ADMIN' || hasPermission('announcements.create_global');
+  const canCreateGlobal = isAdmin;
+  const canCreateClass = isAdmin;
+  const canForward = isAdmin;
+  const canPost = isAdmin;
 
   useEffect(() => {
     loadAnnouncements();
@@ -342,19 +345,19 @@ export const AnnouncementsView = () => {
                     <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                       Target Audience
                     </label>
-                    <select
+                    <Select
                       value={formTargetRole}
                       onChange={(e) => {
                         setFormTargetRole(e.target.value);
                         if (e.target.value !== 'STUDENT') setFormTargetUnit('');
                       }}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                    >
-                      <option value="ALL">All School</option>
-                      <option value="STUDENT">Students Only</option>
-                      <option value="TEACHER">Teachers Only</option>
-                      <option value="STAFF">Staff Only</option>
-                    </select>
+                      options={[
+                        { value: 'ALL', label: 'All School' },
+                        { value: 'STUDENT', label: 'Students Only' },
+                        { value: 'TEACHER', label: 'Teachers Only' },
+                        { value: 'STAFF', label: 'Staff Only' },
+                      ]}
+                    />
                   </div>
                 )}
 
@@ -362,18 +365,15 @@ export const AnnouncementsView = () => {
                   <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                     Class Section (Optional)
                   </label>
-                  <select
+                  <Select
                     value={formTargetUnit}
                     onChange={(e) => setFormTargetUnit(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                  >
-                    <option value="">None (School-wide)</option>
-                    {units.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="None (School-wide)"
+                    options={[
+                      { value: '', label: 'None (School-wide)' },
+                      ...units.map((u) => ({ value: u.id, label: u.name })),
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -441,19 +441,16 @@ export const AnnouncementsView = () => {
                 <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                   Target Academic Unit *
                 </label>
-                <select
+                <Select
                   required
                   value={forwardUnitId}
                   onChange={(e) => setForwardUnitId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                >
-                  <option value="">Select target section...</option>
-                  {units.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Select target section..."
+                  options={[
+                    { value: '', label: 'Select target section...' },
+                    ...units.map((u) => ({ value: u.id, label: u.name })),
+                  ]}
+                />
               </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t border-gray-100 dark:border-slate-700">

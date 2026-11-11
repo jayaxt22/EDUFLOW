@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { examinationsService } from '../services/examinations';
 import { academicsService } from '../services/academics';
 import { useAuth } from '../context/AuthContext';
+import { Select } from './Select';
 import {
   Award,
   BookOpen,
@@ -311,16 +312,12 @@ export const ExaminationsView = () => {
               required
               className="px-3 py-1.5 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-xs text-[#1E293B] dark:text-slate-100 placeholder:text-gray-400 dark:placeholder-slate-400"
             />
-            <select
+            <Select
               value={newExam.academic_year}
               onChange={(e) => setNewExam({ ...newExam, academic_year: e.target.value })}
               required
-              className="px-3 py-1.5 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-xs text-[#1E293B] dark:text-slate-100"
-            >
-              {years.map((y) => (
-                <option key={y.id} value={y.id}>{y.name}</option>
-              ))}
-            </select>
+              options={years.map((y) => ({ value: y.id, label: y.name }))}
+            />
             <input
               type="date"
               value={newExam.start_date}
@@ -404,29 +401,22 @@ export const ExaminationsView = () => {
             {isAddingPaper && (
               <form onSubmit={handleCreatePaperSubmit} className="p-3 bg-gray-50 dark:bg-slate-700/60 rounded-lg space-y-2 border border-gray-200 dark:border-slate-600">
                 <span className="text-[10px] font-bold uppercase text-[#64748B] dark:text-slate-400">New Paper</span>
-                <select
+                <Select
                   value={newPaper.subject}
                   onChange={(e) => setNewPaper({ ...newPaper, subject: e.target.value })}
                   required
-                  className="w-full px-2 py-1 text-xs bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-slate-800 dark:text-slate-100 rounded"
-                >
-                  {availableSubjects.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
-                  ))}
-                </select>
+                  options={availableSubjects.map((s) => ({ value: s.id, label: `${s.name} (${s.code})` }))}
+                />
 
-                <select
+                <Select
                   value={newPaper.academic_unit}
                   onChange={(e) => setNewPaper({ ...newPaper, academic_unit: e.target.value })}
                   required
-                  className="w-full px-2 py-1 text-xs bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-slate-800 dark:text-slate-100 rounded"
-                >
-                  {availableSections.map((sec) => (
-                    <option key={sec.id} value={sec.id}>
-                      {sec.parent_name ? `${sec.parent_name} - ${sec.name}` : sec.name}
-                    </option>
-                  ))}
-                </select>
+                  options={availableSections.map((sec) => ({
+                    value: sec.id,
+                    label: sec.parent_name ? `${sec.parent_name} - ${sec.name}` : sec.name,
+                  }))}
+                />
 
                 <div className="grid grid-cols-2 gap-1.5">
                   <input

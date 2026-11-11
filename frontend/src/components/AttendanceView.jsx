@@ -3,6 +3,7 @@ import { attendanceService } from '../services/attendance';
 import { academicsService } from '../services/academics';
 import { useAuth } from '../context/AuthContext';
 import { MarkAttendanceModal } from './MarkAttendanceModal';
+import { Select } from './Select';
 import {
   CalendarCheck,
   CheckCircle2,
@@ -734,19 +735,17 @@ export const AttendanceView = ({ user: propUser, onNavigateTab }) => {
               <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-[#64748B] dark:text-slate-400" />
-                <span className="text-xs font-semibold text-[#1E293B] dark:text-slate-200">Class / Section:</span>
-                <select
+                <Layers className="w-4 h-4 text-[#64748B] dark:text-slate-400 shrink-0" />
+                <span className="text-xs font-semibold text-[#1E293B] dark:text-slate-200 shrink-0">Class / Section:</span>
+                <Select
                   value={selectedUnitId}
                   onChange={(e) => setSelectedUnitId(e.target.value)}
-                  className="px-3 py-1.5 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-semibold text-[#1E293B] dark:text-slate-100 focus:ring-2 focus:ring-[#FACC15]"
-                >
-                  {sections.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.parent_name ? `${s.parent_name} - ${s.name}` : s.name}
-                    </option>
-                  ))}
-                </select>
+                  className="min-w-[190px]"
+                  options={sections.map((s) => ({
+                    value: s.id,
+                    label: s.parent_name ? `${s.parent_name} - ${s.name}` : s.name,
+                  }))}
+                />
               </div>
 
               <div className="flex items-center gap-2">
@@ -1047,15 +1046,15 @@ export const AttendanceView = ({ user: propUser, onNavigateTab }) => {
                   <label className="block text-xs font-semibold text-[#1E293B] dark:text-slate-200 mb-1.5">
                     Check-in Status
                   </label>
-                  <select
+                  <Select
                     value={selfForm.status}
                     onChange={(e) => setSelfForm({ ...selfForm, status: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-semibold text-[#1E293B] dark:text-slate-100"
-                  >
-                    <option value="PRESENT">PRESENT (On Campus)</option>
-                    <option value="LATE">LATE (Delayed Arrival)</option>
-                    <option value="EXCUSED">EXCUSED (Official Duty / Leave)</option>
-                  </select>
+                    options={[
+                      { value: 'PRESENT', label: 'PRESENT (On Campus)' },
+                      { value: 'LATE', label: 'LATE (Delayed Arrival)' },
+                      { value: 'EXCUSED', label: 'EXCUSED (Official Duty / Leave)' },
+                    ]}
+                  />
                 </div>
 
                 <div>
@@ -1283,18 +1282,18 @@ export const AttendanceView = ({ user: propUser, onNavigateTab }) => {
             <form onSubmit={handleExecuteCorrection} className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-[#1E293B] dark:text-slate-200 mb-1">New Status</label>
-                <select
+                <Select
                   value={correctingRecord.status}
                   onChange={(e) =>
                     setCorrectingRecord({ ...correctingRecord, status: e.target.value })
                   }
-                  className="w-full px-3 py-1.5 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-xs text-[#1E293B] dark:text-slate-100"
-                >
-                  <option value="PRESENT">PRESENT</option>
-                  <option value="ABSENT">ABSENT</option>
-                  <option value="LATE">LATE</option>
-                  <option value="EXCUSED">EXCUSED</option>
-                </select>
+                  options={[
+                    { value: 'PRESENT', label: 'PRESENT' },
+                    { value: 'ABSENT', label: 'ABSENT' },
+                    { value: 'LATE', label: 'LATE' },
+                    { value: 'EXCUSED', label: 'EXCUSED' },
+                  ]}
+                />
               </div>
 
               <div>

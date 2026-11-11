@@ -106,8 +106,6 @@ ROLE_PERMISSION_SEED_MAP = {
         Permission.ATTENDANCE_READ_CLASS,
         Permission.ATTENDANCE_READ_OWN,
         Permission.ATTENDANCE_CORRECT,      # Resolved conditionally (same-day)
-        Permission.ANNOUNCEMENTS_CREATE_CLASS,
-        Permission.ANNOUNCEMENTS_FORWARD,
         Permission.ANNOUNCEMENTS_READ,
         Permission.EXAMINATIONS_ENTER_MARKS,
         Permission.EXAMINATIONS_READ,

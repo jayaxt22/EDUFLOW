@@ -134,25 +134,25 @@ class TestAnnouncementsModule:
         assert ann.created_by == self.admin
         assert ann.target_academic_unit is None
 
-    def test_create_class_announcement_by_teacher(self):
-        """Teacher creates class-targeted announcement for Section A."""
+    def test_create_class_announcement_by_admin(self):
+        """Admin creates class-targeted announcement for Section A."""
         ann = create_announcement(
             tenant_db='tenant_demo',
             title='Math Homework Due Section A',
             content='Complete exercises 1 to 10.',
-            created_by=self.teacher,
+            created_by=self.admin,
             target_role='STUDENT',
             target_academic_unit_id=str(self.section_a.id)
         )
         assert ann.title == 'Math Homework Due Section A'
         assert ann.target_academic_unit == self.section_a
 
-    def test_teacher_global_announcement_blocked_without_permission(self):
-        """Teacher without announcements.create_global cannot publish global notice."""
+    def test_teacher_announcement_creation_blocked(self):
+        """Teacher cannot create announcements (read-only per specification)."""
         with pytest.raises(PermissionDenied):
             create_announcement(
                 tenant_db='tenant_demo',
-                title='Unauthorized Global Announcement',
+                title='Unauthorized Teacher Announcement',
                 content='Test content',
                 created_by=self.teacher,
                 target_role='ALL',
@@ -160,7 +160,7 @@ class TestAnnouncementsModule:
             )
 
     def test_forward_announcement_happy_path(self):
-        """Teacher forwards an existing announcement to Section A with back-reference."""
+        """Admin forwards an existing announcement to Section A with back-reference."""
         global_ann = create_announcement(
             tenant_db='tenant_demo',
             title='Library Book Return Notice',
@@ -172,13 +172,13 @@ class TestAnnouncementsModule:
         forwarded = forward_announcement(
             tenant_db='tenant_demo',
             announcement_id=str(global_ann.id),
-            forwarder_membership=self.teacher,
+            forwarder_membership=self.admin,
             target_academic_unit_id=str(self.section_a.id)
         )
         assert forwarded.title == f"Fwd: {global_ann.title}"
         assert forwarded.forwarded_from == global_ann
         assert forwarded.target_academic_unit == self.section_a
-        assert forwarded.created_by == self.teacher
+        assert forwarded.created_by == self.admin
 
     def test_visibility_filtering_student_isolation(self):
         """Student in Section A sees global & Section A notices, but NOT Section B or Teacher-only."""
@@ -195,7 +195,7 @@ class TestAnnouncementsModule:
             tenant_db='tenant_demo',
             title='Section A Physics Quiz',
             content='Quiz tomorrow.',
-            created_by=self.teacher,
+            created_by=self.admin,
             target_role='STUDENT',
             target_academic_unit_id=str(self.section_a.id)
         )
@@ -204,7 +204,7 @@ class TestAnnouncementsModule:
             tenant_db='tenant_demo',
             title='Section B Biology Quiz',
             content='Quiz on Wednesday.',
-            created_by=self.teacher,
+            created_by=self.admin,
             target_role='STUDENT',
             target_academic_unit_id=str(self.section_b.id)
         )
@@ -244,11 +244,22 @@ class TestAnnouncementsModule:
         assert res.data['data']['title'] == 'School Reopening Schedule'
 
     def test_create_announcement_deny_student_403(self):
-        """Variant 2: Deny (403) - Student lacks announcements.create_* permissions."""
+        """Variant 2a: Deny (403) - Student lacks announcements.create_* permissions."""
         self.client.force_authenticate(user=self.student_a.user)
         payload = {
             'title': 'Student Post',
             'content': 'Hello everyone.',
+            'target_role': 'ALL'
+        }
+        res = self.client.post(self.list_create_url, payload, format='json', HTTP_X_TENANT_SLUG='demo')
+        assert res.status_code == 403
+
+    def test_create_announcement_deny_teacher_403(self):
+        """Variant 2b: Deny (403) - Teacher lacks announcements.create_* permissions (Admin only)."""
+        self.client.force_authenticate(user=self.teacher.user)
+        payload = {
+            'title': 'Teacher Post',
+            'content': 'Unauthorized teacher announcement attempt.',
             'target_role': 'ALL'
         }
         res = self.client.post(self.list_create_url, payload, format='json', HTTP_X_TENANT_SLUG='demo')

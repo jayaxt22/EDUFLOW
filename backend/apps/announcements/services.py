@@ -36,19 +36,15 @@ def create_announcement(
         raise ValidationError({"content": "Announcement content is required."})
 
     target_unit = None
+    # Non-negotiable rule: Only administrators can create announcements (global or class-targeted)
+    if not has_perm(created_by.user, 'announcements.create_global'):
+        raise PermissionDenied("Only administrators can create announcements.")
+
     if target_academic_unit_id:
         try:
             target_unit = AcademicUnit.objects.using(tenant_db).get(id=target_academic_unit_id)
         except AcademicUnit.DoesNotExist:
             raise ValidationError({"target_academic_unit_id": "Target academic unit not found."})
-
-        # Class targeted announcement
-        if not has_perm(created_by.user, 'announcements.create_class') and not has_perm(created_by.user, 'announcements.create_global'):
-            raise PermissionDenied("You lack permission to create class-targeted announcements.")
-    else:
-        # Global announcement
-        if not has_perm(created_by.user, 'announcements.create_global'):
-            raise PermissionDenied("You lack permission to create global school announcements.")
 
     announcement = Announcement.objects.using(tenant_db).create(
         title=title.strip(),
