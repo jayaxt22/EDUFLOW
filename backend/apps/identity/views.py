@@ -70,11 +70,12 @@ class LoginView(APIView):
 
         # Set HttpOnly cookies
         is_secure = not settings.DEBUG
+        cookie_samesite = getattr(settings, 'AUTH_COOKIE_SAMESITE', 'None' if is_secure else 'Lax')
         response.set_cookie(
             key='access_token',
             value=access_token,
             httponly=True,
-            samesite='Lax',
+            samesite=cookie_samesite,
             secure=is_secure,
             path='/',
             max_age=3600  # 1 hour
@@ -83,7 +84,7 @@ class LoginView(APIView):
             key='refresh_token',
             value=refresh_token,
             httponly=True,
-            samesite='Lax',
+            samesite=cookie_samesite,
             secure=is_secure,
             path='/',
             max_age=86400 * 7  # 7 days
@@ -105,8 +106,10 @@ class LogoutView(APIView):
             "data": {"message": "Successfully logged out."}
         }, status=status.HTTP_200_OK)
 
-        response.delete_cookie('access_token', path='/')
-        response.delete_cookie('refresh_token', path='/')
+        is_secure = not settings.DEBUG
+        cookie_samesite = getattr(settings, 'AUTH_COOKIE_SAMESITE', 'None' if is_secure else 'Lax')
+        response.delete_cookie('access_token', path='/', samesite=cookie_samesite)
+        response.delete_cookie('refresh_token', path='/', samesite=cookie_samesite)
         return response
 
 
@@ -160,11 +163,12 @@ class TokenRefreshCookieView(APIView):
         }, status=status.HTTP_200_OK)
 
         is_secure = not settings.DEBUG
+        cookie_samesite = getattr(settings, 'AUTH_COOKIE_SAMESITE', 'None' if is_secure else 'Lax')
         response.set_cookie(
             key='access_token',
             value=new_access_token,
             httponly=True,
-            samesite='Lax',
+            samesite=cookie_samesite,
             secure=is_secure,
             path='/',
             max_age=3600  # 1 hour

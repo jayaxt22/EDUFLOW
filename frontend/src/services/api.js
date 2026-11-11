@@ -9,20 +9,22 @@
  */
 
 export const getApiBaseUrl = () => {
-  if (typeof window !== 'undefined' && window.location) {
+  let url = '';
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
+    url = import.meta.env.VITE_API_URL;
+  } else if (typeof import.meta !== 'undefined' && import.meta.env?.NEXT_PUBLIC_API_URL) {
+    url = import.meta.env.NEXT_PUBLIC_API_URL;
+  } else if (typeof window !== 'undefined' && window.location) {
     const host = window.location.hostname;
     // Align hostname with browser to guarantee SameSite cookies are transmitted
     if (host === 'localhost' || host === '127.0.0.1') {
-      return `http://${host}:8000`;
+      url = `http://${host}:8000`;
     }
   }
-  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  if (!url) {
+    url = 'http://localhost:8000';
   }
-  if (typeof import.meta !== 'undefined' && import.meta.env?.NEXT_PUBLIC_API_URL) {
-    return import.meta.env.NEXT_PUBLIC_API_URL;
-  }
-  return 'http://localhost:8000';
+  return url.replace(/\/+$/, '');
 };
 
 let currentTenantSlug = 'demo';
