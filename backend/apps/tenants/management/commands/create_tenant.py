@@ -14,6 +14,7 @@ from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.conf import settings
 import logging
+import re
 
 from apps.tenants.models import Institution, TenantRegistry
 from apps.tenants.database import register_tenant_database, parse_db_url
@@ -35,6 +36,7 @@ def ensure_postgres_database(db_url: str):
         return
 
     import psycopg
+    from psycopg import sql
     db_name = unquote(parsed.path.lstrip('/'))
     if not db_name:
         return
@@ -48,7 +50,7 @@ def ensure_postgres_database(db_url: str):
             with conn.cursor() as cur:
                 cur.execute("SELECT 1 FROM pg_database WHERE datname = %s;", (db_name,))
                 if not cur.fetchone():
-                    cur.execute(f'CREATE DATABASE "{db_name}";')
+                    cur.execute(sql.SQL('CREATE DATABASE {}').format(sql.Identifier(db_name)))
                     logger.info(f"Created PostgreSQL database '{db_name}' on server.")
     except Exception as e:
         logger.warning(f"Note on ensure_postgres_database for '{db_name}': {e}")
@@ -107,6 +109,9 @@ class Command(BaseCommand):
         admin_password = options.get('admin_password') or "SchoolPass123!"
         admin_username = options.get('admin_username') or f"admin_{slug}"
         admin_name = options.get('admin_name')
+
+        if not re.match(r'^[a-z0-9_-]+$', slug):
+            raise CommandError(f"Invalid slug '{slug}'. Slugs must contain only lowercase letters, digits, hyphens, and underscores.")
 
         self.stdout.write(self.style.MIGRATE_HEADING(f"=== Provisioning Tenant: {name} [{slug}] ==="))
 
