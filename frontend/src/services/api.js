@@ -9,20 +9,17 @@
  */
 
 export const getApiBaseUrl = () => {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
+  }
   if (typeof window !== 'undefined' && window.location) {
     const host = window.location.hostname;
     // Local development: direct to Django port 8000
     if (host === 'localhost' || host === '127.0.0.1') {
-      if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
-        return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
-      }
       return `http://${host}:8000`;
     }
-    // Deployed / Production (Vercel): use same-origin proxy rewrites ('')
-    // This makes all cookies 100% first-party and prevents browser third-party cookie blocking!
-    return '';
   }
-  return '';
+  return 'https://eduflow-delta-tawny.vercel.app';
 };
 
 let currentTenantSlug = 'demo';
@@ -35,6 +32,20 @@ export const getTenantSlug = () => {
   return currentTenantSlug;
 };
 
+// In-memory token storage (held in RAM only, strictly zero localStorage)
+let inMemoryAccessToken = null;
+let inMemoryRefreshToken = null;
+
+export const setAuthTokens = ({ accessToken, refreshToken } = {}) => {
+  if (accessToken !== undefined) inMemoryAccessToken = accessToken;
+  if (refreshToken !== undefined) inMemoryRefreshToken = refreshToken;
+};
+
+export const clearAuthTokens = () => {
+  inMemoryAccessToken = null;
+  inMemoryRefreshToken = null;
+};
+
 // In-flight refresh promise mutex to prevent concurrent refresh storms
 let refreshPromise = null;
 
@@ -43,19 +54,27 @@ async function refreshSessionToken() {
     refreshPromise = (async () => {
       try {
         const baseUrl = getApiBaseUrl();
+        const refreshHeaders = {
+          'Content-Type': 'application/json',
+          'X-Tenant-Slug': currentTenantSlug,
+        };
+        const body = inMemoryRefreshToken ? JSON.stringify({ refresh: inMemoryRefreshToken }) : undefined;
         const res = await fetch(`${baseUrl}/api/v1/auth/refresh/`, {
           method: 'POST',
           credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Tenant-Slug': currentTenantSlug,
-          },
+          headers: refreshHeaders,
+          body,
         });
         if (!res.ok) {
           throw new Error('Session expired');
         }
+        const refreshedToken = res.headers.get('x-access-token');
+        if (refreshedToken) {
+          setAuthTokens({ accessToken: refreshedToken });
+        }
         return true;
       } catch (err) {
+        clearAuthTokens();
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('eduflow:session_expired'));
         }
@@ -83,6 +102,10 @@ export async function request(endpoint, options = {}, isRetry = false) {
     'X-Tenant-Slug': currentTenantSlug,
   };
 
+  if (inMemoryAccessToken) {
+    defaultHeaders['Authorization'] = `Bearer ${inMemoryAccessToken}`;
+  }
+
   if (!isFormData) {
     defaultHeaders['Content-Type'] = 'application/json';
   }
@@ -104,6 +127,16 @@ export async function request(endpoint, options = {}, isRetry = false) {
   }
 
   const response = await fetch(url, config);
+
+  // Capture in-memory tokens from response headers if present (pure RAM, zero localStorage)
+  const newAccessToken = response.headers.get('x-access-token');
+  const newRefreshToken = response.headers.get('x-refresh-token');
+  if (newAccessToken) {
+    setAuthTokens({
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken || undefined,
+    });
+  }
 
   // Automatic token refresh on 401 if refresh cookie exists
   if (

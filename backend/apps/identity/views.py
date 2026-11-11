@@ -69,6 +69,10 @@ class LoginView(APIView):
             "data": user_data
         }, status=status.HTTP_200_OK)
 
+        # Expose tokens via response headers for in-memory cross-origin session resilience
+        response['X-Access-Token'] = access_token
+        response['X-Refresh-Token'] = refresh_token
+
         # Set HttpOnly cookies
         is_https = request.is_secure() or request.headers.get('x-forwarded-proto') == 'https'
         is_secure = not settings.DEBUG or is_https or os.environ.get('VERCEL') == '1'
@@ -164,6 +168,8 @@ class TokenRefreshCookieView(APIView):
             "success": True,
             "data": {"message": "Access token refreshed successfully."}
         }, status=status.HTTP_200_OK)
+
+        response['X-Access-Token'] = new_access_token
 
         is_https = request.is_secure() or request.headers.get('x-forwarded-proto') == 'https'
         is_secure = not settings.DEBUG or is_https or os.environ.get('VERCEL') == '1'

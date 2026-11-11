@@ -251,6 +251,10 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
     'x-tenant-slug',
 ]
+CORS_EXPOSE_HEADERS = [
+    'x-access-token',
+    'x-refresh-token',
+]
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

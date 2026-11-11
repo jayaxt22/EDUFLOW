@@ -3,7 +3,7 @@
  * Communicates with /api/v1/auth/* endpoints.
  */
 
-import { api } from './api';
+import { api, clearAuthTokens } from './api';
 
 export const authService = {
   /**
@@ -16,10 +16,14 @@ export const authService = {
   },
 
   /**
-   * Clears session cookies on the backend.
+   * Clears session cookies on the backend and in-memory tokens.
    */
   async logout() {
-    return await api.post('/auth/logout/');
+    try {
+      return await api.post('/auth/logout/');
+    } finally {
+      clearAuthTokens();
+    }
   },
 
   /**

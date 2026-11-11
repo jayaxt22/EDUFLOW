@@ -1,18 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://eduflow-delta-tawny.vercel.app/api/:path*"
-    },
-    {
-      "source": "/media/:path*",
-      "destination": "https://eduflow-delta-tawny.vercel.app/media/:path*"
-    },
-    {
-      "source": "/health",
-      "destination": "https://eduflow-delta-tawny.vercel.app/health/"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
