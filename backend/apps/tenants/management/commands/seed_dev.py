@@ -19,6 +19,7 @@ from apps.fees.models import FeeStructure, Invoice
 from apps.announcements.models import Announcement
 from decimal import Decimal
 from django.conf import settings
+import os
 
 class Command(BaseCommand):
     help = 'Seeds initial control database and demo tenant database with sample school data.'
@@ -58,12 +59,31 @@ class Command(BaseCommand):
         )
         self.stdout.write(f"   - Institution: {demo_inst.name} [{demo_inst.slug}] ({'Created' if created else 'Updated'})")
 
-        tenant_sqlite_path = str(settings.BASE_DIR / 'eduflow_tenant_demo.sqlite3').replace('\\', '/')
+        # Determine tenant db url based on active configuration
+        tenant_db_cfg = settings.DATABASES.get(tenant_db, settings.DATABASES.get('tenant_demo', {}))
+        if tenant_db_cfg.get('ENGINE') == 'django.db.backends.postgresql':
+            demo_db_url = os.environ.get('DEMO_TENANT_DATABASE_URL')
+            if not demo_db_url:
+                host = tenant_db_cfg.get('HOST', 'localhost')
+                port = tenant_db_cfg.get('PORT', '5432')
+                user = tenant_db_cfg.get('USER', 'postgres')
+                pw = tenant_db_cfg.get('PASSWORD', '')
+                name = tenant_db_cfg.get('NAME', 'eduflow_tenant_demo')
+                opts = tenant_db_cfg.get('OPTIONS', {})
+                opt_str = f"?{'&'.join(f'{k}={v}' for k, v in opts.items())}" if opts else ''
+                auth_part = f"{user}:{pw}@" if (user or pw) else ""
+                demo_db_url = f"postgresql://{auth_part}{host}:{port}/{name}{opt_str}"
+            provider = 'neon' if 'neon.tech' in demo_db_url else 'postgresql'
+        else:
+            tenant_sqlite_path = str(settings.BASE_DIR / 'eduflow_tenant_demo.sqlite3').replace('\\', '/')
+            demo_db_url = f'sqlite:///{tenant_sqlite_path}'
+            provider = 'local'
+
         demo_reg, created = TenantRegistry.objects.using('default').update_or_create(
             institution=demo_inst,
             defaults={
-                'db_url': f'sqlite:///{tenant_sqlite_path}',
-                'provider': 'local',
+                'db_url': demo_db_url,
+                'provider': provider,
                 'status': 'ACTIVE',
             }
         )

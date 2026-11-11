@@ -80,13 +80,26 @@ ASGI_APPLICATION = 'config.asgi.application'
 # Database Configuration (Project-per-tenant model)
 # Control DB: eduflow_control (configured as 'default')
 # Tenant DBs: dynamically routed via TenantRouter and registered in connections
+from apps.tenants.database import parse_db_url
+
+CONTROL_DATABASE_URL = os.environ.get('CONTROL_DATABASE_URL') or os.environ.get('DATABASE_URL')
+DEMO_TENANT_DATABASE_URL = os.environ.get('DEMO_TENANT_DATABASE_URL')
+
 DB_ENGINE = os.environ.get('DB_ENGINE', 'postgresql')
 POSTGRES_HOST = os.environ.get('POSTGRES_HOST', 'localhost')
 POSTGRES_PORT = os.environ.get('POSTGRES_PORT', '5432')
 POSTGRES_USER = os.environ.get('POSTGRES_USER', 'postgres')
 POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD', 'postgres')
 
-if DB_ENGINE == 'postgresql' and os.environ.get('USE_POSTGRES') == 'true':
+if CONTROL_DATABASE_URL:
+    DATABASES = {
+        'default': parse_db_url(CONTROL_DATABASE_URL, base_dir=BASE_DIR),
+        'tenant_demo': parse_db_url(
+            DEMO_TENANT_DATABASE_URL or CONTROL_DATABASE_URL.replace('/eduflow_control', '/eduflow_tenant_demo').replace('/neondb', '/eduflow_tenant_demo'),
+            base_dir=BASE_DIR
+        )
+    }
+elif DB_ENGINE == 'postgresql' and os.environ.get('USE_POSTGRES') == 'true':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
