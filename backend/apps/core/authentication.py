@@ -28,11 +28,11 @@ class CookieJWTAuthentication(JWTAuthentication):
         header = self.get_header(request)
         raw_token = None
 
-        # 1. Prefer HttpOnly cookie
-        if 'access_token' in request.COOKIES:
-            raw_token = request.COOKIES.get('access_token')
-        elif header is not None:
+        # 1. Prefer explicitly provided Authorization header (in-memory token), fallback to HttpOnly cookie
+        if header is not None:
             raw_token = self.get_raw_token(header)
+        elif 'access_token' in request.COOKIES:
+            raw_token = request.COOKIES.get('access_token')
 
         if raw_token is None:
             return None

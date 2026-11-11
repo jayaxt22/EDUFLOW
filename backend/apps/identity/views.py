@@ -12,6 +12,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.conf import settings
 from django.http import Http404
+import os
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 
@@ -69,8 +70,9 @@ class LoginView(APIView):
         }, status=status.HTTP_200_OK)
 
         # Set HttpOnly cookies
-        is_secure = not settings.DEBUG
-        cookie_samesite = getattr(settings, 'AUTH_COOKIE_SAMESITE', 'None' if is_secure else 'Lax')
+        is_https = request.is_secure() or request.headers.get('x-forwarded-proto') == 'https'
+        is_secure = not settings.DEBUG or is_https or os.environ.get('VERCEL') == '1'
+        cookie_samesite = 'None' if is_secure else 'Lax'
         response.set_cookie(
             key='access_token',
             value=access_token,
@@ -106,8 +108,9 @@ class LogoutView(APIView):
             "data": {"message": "Successfully logged out."}
         }, status=status.HTTP_200_OK)
 
-        is_secure = not settings.DEBUG
-        cookie_samesite = getattr(settings, 'AUTH_COOKIE_SAMESITE', 'None' if is_secure else 'Lax')
+        is_https = request.is_secure() or request.headers.get('x-forwarded-proto') == 'https'
+        is_secure = not settings.DEBUG or is_https or os.environ.get('VERCEL') == '1'
+        cookie_samesite = 'None' if is_secure else 'Lax'
         response.delete_cookie('access_token', path='/', samesite=cookie_samesite)
         response.delete_cookie('refresh_token', path='/', samesite=cookie_samesite)
         return response
@@ -162,8 +165,9 @@ class TokenRefreshCookieView(APIView):
             "data": {"message": "Access token refreshed successfully."}
         }, status=status.HTTP_200_OK)
 
-        is_secure = not settings.DEBUG
-        cookie_samesite = getattr(settings, 'AUTH_COOKIE_SAMESITE', 'None' if is_secure else 'Lax')
+        is_https = request.is_secure() or request.headers.get('x-forwarded-proto') == 'https'
+        is_secure = not settings.DEBUG or is_https or os.environ.get('VERCEL') == '1'
+        cookie_samesite = 'None' if is_secure else 'Lax'
         response.set_cookie(
             key='access_token',
             value=new_access_token,

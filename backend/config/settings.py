@@ -213,13 +213,16 @@ SIMPLE_JWT = {
     'AUTH_COOKIE': 'access_token',
     'AUTH_COOKIE_REFRESH': 'refresh_token',
     'AUTH_COOKIE_DOMAIN': None,
-    'AUTH_COOKIE_SECURE': not DEBUG,
+    'AUTH_COOKIE_SECURE': not DEBUG or os.environ.get('VERCEL') == '1',
     'AUTH_COOKIE_HTTP_ONLY': True,
     'AUTH_COOKIE_PATH': '/',
-    'AUTH_COOKIE_SAMESITE': 'None' if not DEBUG else 'Lax',
+    'AUTH_COOKIE_SAMESITE': 'None' if (not DEBUG or os.environ.get('VERCEL') == '1') else 'Lax',
 }
 
-AUTH_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
+# Reverse proxy SSL header for Vercel / Cloudflare
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+AUTH_COOKIE_SECURE = not DEBUG or os.environ.get('VERCEL') == '1'
+AUTH_COOKIE_SAMESITE = 'None' if AUTH_COOKIE_SECURE else 'Lax'
 
 # CORS configuration
 CORS_ALLOW_CREDENTIALS = True
