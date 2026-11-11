@@ -12,6 +12,7 @@ def health_check(request):
     return JsonResponse({"status": "ok", "app": "EduFlow ERP"})
 
 urlpatterns = [
+    path('', health_check, name='root-health'),
     path('health/', health_check, name='health-check'),
     path('api/v1/', include('apps.identity.urls')),
     path('api/v1/academics/', include('apps.academics.urls')),

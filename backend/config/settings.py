@@ -16,7 +16,9 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'eduflow-insecure-development-s
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',') if h.strip()]
+if '*' not in ALLOWED_HOSTS and '.vercel.app' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('.vercel.app')
 
 INSTALLED_APPS = [
     # Django core apps

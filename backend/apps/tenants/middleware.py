@@ -25,8 +25,8 @@ class TenantMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Allow preflight and exempt paths without tenant slug
-        if request.method == 'OPTIONS' or any(request.path.startswith(prefix) for prefix in EXEMPT_PATHS):
+        # Allow preflight, root health check, and exempt paths without tenant slug
+        if request.method == 'OPTIONS' or request.path == '/' or any(request.path.startswith(prefix) for prefix in EXEMPT_PATHS):
             return self.get_response(request)
 
         # 1. Extract tenant slug from header or hostname
