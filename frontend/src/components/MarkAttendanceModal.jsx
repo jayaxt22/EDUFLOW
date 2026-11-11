@@ -12,13 +12,16 @@ import {
 } from 'lucide-react';
 
 export const MarkAttendanceModal = ({
-  isOpen,
+  isOpen = true,
   onClose,
   academicUnitId,
+  unitId,
   unitName,
+  students: propStudents,
   onSaved,
   initialDate
 }) => {
+  const targetUnitId = academicUnitId || unitId;
   const [selectedDate, setSelectedDate] = useState(
     initialDate || new Date().toISOString().split('T')[0]
   );
@@ -30,49 +33,77 @@ export const MarkAttendanceModal = ({
   const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
-    if (isOpen && academicUnitId) {
+    if (isOpen && targetUnitId) {
       loadRoster();
     }
-  }, [isOpen, academicUnitId, selectedDate]);
+  }, [isOpen, targetUnitId, selectedDate]);
 
   const loadRoster = async () => {
     setLoading(true);
     setError(null);
     try {
       // Fetch current summary for this date to pre-populate any existing marks
-      const summary = await attendanceService.getSummary(academicUnitId, selectedDate);
+      const summary = await attendanceService.getSummary(targetUnitId, selectedDate);
       const rosterList = summary.roster || [];
-      setStudents(rosterList);
+      if (rosterList.length > 0) {
+        setStudents(rosterList);
 
-      const initialStatusMap = {};
-      rosterList.forEach((s) => {
-        initialStatusMap[s.membership_id] = {
-          status: s.status === 'UNMARKED' ? 'PRESENT' : s.status,
-          remarks: s.remarks || '',
-        };
-      });
-      setStatuses(initialStatusMap);
+        const initialStatusMap = {};
+        rosterList.forEach((s) => {
+          initialStatusMap[s.membership_id] = {
+            status: s.status === 'UNMARKED' ? 'PRESENT' : s.status,
+            remarks: s.remarks || '',
+          };
+        });
+        setStatuses(initialStatusMap);
+      } else if (propStudents && propStudents.length > 0) {
+        setStudents(propStudents);
+        const initialStatusMap = {};
+        propStudents.forEach((s) => {
+          initialStatusMap[s.membership_id] = {
+            status: 'PRESENT',
+            remarks: '',
+          };
+        });
+        setStatuses(initialStatusMap);
+      } else {
+        setStudents([]);
+        setStatuses({});
+      }
     } catch (err) {
       console.error('Failed to load roster:', err);
-      // Fallback: load directly from enrollments
-      try {
-        const enrollments = await academicsService.listEnrollments();
-        const filtered = enrollments.filter((e) => e.academic_unit === academicUnitId);
-        setStudents(
-          filtered.map((e) => ({
-            membership_id: e.membership,
-            full_name: e.student_name,
-            roll_number: e.roll_number,
-            admission_number: e.admission_number,
-          }))
-        );
-        const map = {};
-        filtered.forEach((e) => {
-          map[e.membership] = { status: 'PRESENT', remarks: '' };
+      // Fallback 1: use propStudents if available
+      if (propStudents && propStudents.length > 0) {
+        setStudents(propStudents);
+        const initialStatusMap = {};
+        propStudents.forEach((s) => {
+          initialStatusMap[s.membership_id] = {
+            status: 'PRESENT',
+            remarks: '',
+          };
         });
-        setStatuses(map);
-      } catch (e2) {
-        setError('Could not load student roster for this section.');
+        setStatuses(initialStatusMap);
+      } else {
+        // Fallback 2: load directly from enrollments
+        try {
+          const enrollments = await academicsService.listEnrollments();
+          const filtered = enrollments.filter((e) => e.academic_unit === targetUnitId);
+          setStudents(
+            filtered.map((e) => ({
+              membership_id: e.membership,
+              full_name: e.student_name,
+              roll_number: e.roll_number,
+              admission_number: e.admission_number,
+            }))
+          );
+          const map = {};
+          filtered.forEach((e) => {
+            map[e.membership] = { status: 'PRESENT', remarks: '' };
+          });
+          setStatuses(map);
+        } catch (e2) {
+          setError('Could not load student roster for this section.');
+        }
       }
     } finally {
       setLoading(false);
@@ -124,7 +155,7 @@ export const MarkAttendanceModal = ({
       }));
 
       const payload = {
-        academic_unit_id: academicUnitId,
+        academic_unit_id: targetUnitId,
         date: selectedDate,
         records,
       };

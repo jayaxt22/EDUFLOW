@@ -218,10 +218,13 @@ export const TeacherMyClassView = () => {
       {/* Attendance Modal */}
       {isAttendanceModalOpen && (
         <MarkAttendanceModal
+          isOpen={isAttendanceModalOpen}
+          academicUnitId={unit.id}
           unitId={unit.id}
           unitName={`${unit.parent_name ? unit.parent_name + ' - ' : ''}${unit.name}`}
           students={students}
           onClose={() => setIsAttendanceModalOpen(false)}
+          onSaved={fetchRoster}
         />
       )}
     </div>
