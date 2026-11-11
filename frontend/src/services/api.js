@@ -9,22 +9,20 @@
  */
 
 export const getApiBaseUrl = () => {
-  let url = '';
-  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
-    url = import.meta.env.VITE_API_URL;
-  } else if (typeof import.meta !== 'undefined' && import.meta.env?.NEXT_PUBLIC_API_URL) {
-    url = import.meta.env.NEXT_PUBLIC_API_URL;
-  } else if (typeof window !== 'undefined' && window.location) {
+  if (typeof window !== 'undefined' && window.location) {
     const host = window.location.hostname;
-    // Align hostname with browser to guarantee SameSite cookies are transmitted
+    // Local development: direct to Django port 8000
     if (host === 'localhost' || host === '127.0.0.1') {
-      url = `http://${host}:8000`;
+      if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
+        return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
+      }
+      return `http://${host}:8000`;
     }
+    // Deployed / Production (Vercel): use same-origin proxy rewrites ('')
+    // This makes all cookies 100% first-party and prevents browser third-party cookie blocking!
+    return '';
   }
-  if (!url) {
-    url = 'http://localhost:8000';
-  }
-  return url.replace(/\/+$/, '');
+  return '';
 };
 
 let currentTenantSlug = 'demo';
