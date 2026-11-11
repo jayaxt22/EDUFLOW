@@ -38,7 +38,7 @@ class BulkClassAttendanceView(APIView):
         serializer = BulkClassAttendanceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         result = mark_class_attendance(
             tenant_db=tenant_db,
             academic_unit_id=str(serializer.validated_data['academic_unit_id']),
@@ -75,7 +75,7 @@ class SelfAttendanceView(APIView):
         serializer = SelfAttendanceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         record = mark_self_attendance(
             tenant_db=tenant_db,
             membership=request.user.membership,
@@ -101,7 +101,7 @@ class AttendanceCorrectionView(APIView):
         serializer = AttendanceCorrectionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         is_admin = has_perm(request.user, 'users.create', request=request, view=self)
 
         record = correct_attendance(
@@ -137,7 +137,7 @@ class ClassAttendanceSummaryView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         attendance_date = date.fromisoformat(date_str) if date_str else date.today()
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
 
         summary = get_class_attendance_summary(
             tenant_db=tenant_db,
@@ -159,7 +159,7 @@ class AttendanceRecordListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
 
         if has_perm(request.user, 'attendance.read_class', request=request, view=self):
             qs = AttendanceRecord.objects.using(tenant_db).select_related(
@@ -208,7 +208,7 @@ class SchoolAttendanceAnalyticsView(APIView):
     def get(self, request):
         date_str = request.query_params.get('date')
         target_date = date.fromisoformat(date_str) if date_str else date.today()
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
 
         analytics = get_school_attendance_analytics(
             tenant_db=tenant_db,
@@ -232,7 +232,7 @@ class SelfAttendanceStatusView(APIView):
     def get(self, request):
         date_str = request.query_params.get('date')
         target_date = date.fromisoformat(date_str) if date_str else date.today()
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
 
         status_data = get_self_checkin_status(
             tenant_db=tenant_db,

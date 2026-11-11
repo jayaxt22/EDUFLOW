@@ -586,7 +586,7 @@ export const LandingPage = ({ onNavigateToLogin }) => {
               onClick={onNavigateToLogin}
               className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-[#FACC15] hover:bg-yellow-400 px-5 py-3.5 font-bold text-xs text-[#1E293B] shadow-xs transition"
             >
-              <span>Sign In to Demo Portal</span>
+              <span>Sign In to Institutional Portal</span>
               <ArrowRight size={16} />
             </button>
           </div>

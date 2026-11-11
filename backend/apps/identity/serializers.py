@@ -71,7 +71,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             if not membership:
                 obj._cached_active_enrollment = None
             else:
-                db = getattr(obj._state, 'db', None) or 'tenant_demo'
+                db = getattr(obj._state, 'db', None) or 'tenant_horizon'
                 obj._cached_active_enrollment = (
                     membership.enrollments.using(db)
                     .filter(enrolled_to__isnull=True)

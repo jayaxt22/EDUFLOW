@@ -22,10 +22,10 @@ export const getApiBaseUrl = () => {
   return 'https://eduflow-delta-tawny.vercel.app';
 };
 
-let currentTenantSlug = 'demo';
+let currentTenantSlug = 'horizon';
 
 export const setTenantSlug = (slug) => {
-  currentTenantSlug = slug || 'demo';
+  currentTenantSlug = slug || 'horizon';
 };
 
 export const getTenantSlug = () => {
@@ -58,6 +58,9 @@ async function refreshSessionToken() {
           'Content-Type': 'application/json',
           'X-Tenant-Slug': currentTenantSlug,
         };
+        if (inMemoryRefreshToken) {
+          refreshHeaders['X-Refresh-Token'] = inMemoryRefreshToken;
+        }
         const body = inMemoryRefreshToken ? JSON.stringify({ refresh: inMemoryRefreshToken }) : undefined;
         const res = await fetch(`${baseUrl}/api/v1/auth/refresh/`, {
           method: 'POST',

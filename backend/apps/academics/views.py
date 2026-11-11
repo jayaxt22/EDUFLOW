@@ -41,14 +41,14 @@ class AcademicYearViewSet(ViewSet):
         return [IsAuthenticated()]
 
     def list(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         years = AcademicYear.objects.using(tenant_db).all().order_by('-start_date')
         return Response({"success": True, "data": AcademicYearSerializer(years, many=True).data})
 
     def create(self, request):
         serializer = AcademicYearSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         year = create_academic_year(
             tenant_db=tenant_db,
             name=serializer.validated_data['name'],
@@ -66,7 +66,7 @@ class AcademicUnitViewSet(ViewSet):
         return [IsAuthenticated()]
 
     def list(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         units = AcademicUnit.objects.using(tenant_db).select_related(
             'academic_year', 'parent'
         ).prefetch_related(
@@ -79,7 +79,7 @@ class AcademicUnitViewSet(ViewSet):
         return Response({"success": True, "data": AcademicUnitSerializer(units, many=True).data})
 
     def create(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         unit_type = request.data.get('unit_type')
         parent_id = request.data.get('parent')
 
@@ -101,7 +101,7 @@ class AcademicUnitViewSet(ViewSet):
         return Response({"success": True, "data": AcademicUnitSerializer(unit).data}, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, pk=None):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         delete_academic_unit(tenant_db=tenant_db, unit_id=pk)
         return Response({"success": True, "message": "Academic unit deleted successfully."}, status=status.HTTP_200_OK)
 
@@ -113,12 +113,12 @@ class SubjectViewSet(ViewSet):
         return [IsAuthenticated()]
 
     def list(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         subjects = Subject.objects.using(tenant_db).all().order_by('name')
         return Response({"success": True, "data": SubjectSerializer(subjects, many=True).data})
 
     def create(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         subject = create_subject(
             tenant_db=tenant_db,
             name=request.data.get('name'),
@@ -134,7 +134,7 @@ class TeachingAssignmentViewSet(ViewSet):
         return [IsAuthenticated()]
 
     def list(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         if has_perm(request.user, 'allocations.crud', request=request, view=self):
             assignments = TeachingAssignment.objects.using(tenant_db).select_related(
                 'membership__user', 'subject', 'academic_unit'
@@ -148,7 +148,7 @@ class TeachingAssignmentViewSet(ViewSet):
         return Response({"success": True, "data": TeachingAssignmentSerializer(assignments, many=True).data})
 
     def create(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         subject_id = request.data.get('subject')
         if not subject_id or str(subject_id).strip() in ('', 'null', 'undefined'):
             subject_id = None
@@ -170,7 +170,7 @@ class TeachingAssignmentViewSet(ViewSet):
         return Response({"success": True, "data": TeachingAssignmentSerializer(assignment).data}, status=status.HTTP_201_CREATED)
 
     def unassign_class_teacher(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         unit_id = request.data.get('academic_unit')
         if not unit_id:
             raise ValidationError({"academic_unit": "Academic unit is required."})
@@ -185,7 +185,7 @@ class StudentEnrollmentViewSet(ViewSet):
         return [IsAuthenticated()]
 
     def list(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         qs = StudentEnrollment.objects.using(tenant_db).select_related(
             'membership__user', 'membership__student_profile', 'academic_unit'
         ).filter(enrolled_to__isnull=True)
@@ -195,7 +195,7 @@ class StudentEnrollmentViewSet(ViewSet):
         return Response({"success": True, "data": StudentEnrollmentSerializer(qs, many=True).data})
 
     def create(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         enrollment = enroll_student(
             tenant_db=tenant_db,
             student_membership_id=request.data.get('membership'),
@@ -209,7 +209,7 @@ class StudentEnrollmentViewSet(ViewSet):
     def transfer(self, request):
         serializer = StudentTransferRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
 
         enrollment = transfer_student_section(
             tenant_db=tenant_db,
@@ -237,7 +237,7 @@ class PromotionView(APIView):
         serializer = PromotionBatchRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         new_enrollments = promote_students(
             tenant_db=tenant_db,
             target_unit_id=str(serializer.validated_data['target_unit_id']),
@@ -269,7 +269,7 @@ class MyClassView(APIView):
     permission_classes = [IsAuthenticated, HasEduFlowPerm('teacher.my_class.view')]
 
     def get(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         roster_data = get_my_class_roster(tenant_db, request.user.membership)
         return Response({
             "success": True,
@@ -287,7 +287,7 @@ class TeacherMyClassRosterView(APIView):
     permission_classes = [IsAuthenticated, HasEduFlowPerm('teacher.my_class.view')]
 
     def get(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         roster_data = get_my_class_roster(tenant_db, request.user.membership)
         return Response({
             "success": True,

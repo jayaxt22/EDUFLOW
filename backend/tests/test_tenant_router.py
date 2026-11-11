@@ -9,7 +9,7 @@ from apps.tenants.models import Institution, PlatformUser
 from apps.identity.models import User, Membership
 from apps.tenants.context import tenant_context
 
-@pytest.mark.django_db(databases=['default', 'tenant_demo'])
+@pytest.mark.django_db(databases=['default', 'tenant_horizon'])
 class TestTenantRouter:
     def setup_method(self):
         self.router = TenantRouter()
@@ -23,11 +23,11 @@ class TestTenantRouter:
 
     def test_tenant_models_route_to_active_context(self):
         """Tenant domain models must route to the active tenant database."""
-        with tenant_context('tenant_demo', slug='demo'):
-            assert self.router.db_for_read(User) == 'tenant_demo'
-            assert self.router.db_for_write(User) == 'tenant_demo'
-            assert self.router.db_for_read(Membership) == 'tenant_demo'
-            assert self.router.db_for_write(Membership) == 'tenant_demo'
+        with tenant_context('tenant_horizon', slug='demo'):
+            assert self.router.db_for_read(User) == 'tenant_horizon'
+            assert self.router.db_for_write(User) == 'tenant_horizon'
+            assert self.router.db_for_read(Membership) == 'tenant_horizon'
+            assert self.router.db_for_write(Membership) == 'tenant_horizon'
 
     def test_cross_database_relations_blocked(self):
         """Cross-database relations between control and tenant objects must be rejected."""
@@ -46,6 +46,6 @@ class TestTenantRouter:
         assert self.router.allow_migrate('default', 'academics') is False
 
         # On tenant database
-        assert self.router.allow_migrate('tenant_demo', 'identity') is True
-        assert self.router.allow_migrate('tenant_demo', 'academics') is True
-        assert self.router.allow_migrate('tenant_demo', 'tenants') is False
+        assert self.router.allow_migrate('tenant_horizon', 'identity') is True
+        assert self.router.allow_migrate('tenant_horizon', 'academics') is True
+        assert self.router.allow_migrate('tenant_horizon', 'tenants') is False

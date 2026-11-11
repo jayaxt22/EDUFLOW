@@ -72,7 +72,7 @@ class CookieJWTAuthentication(JWTAuthentication):
         if not user_id:
             raise InvalidToken("Token contained no recognizable user identification.")
 
-        tenant_db = get_current_tenant_db() or 'tenant_demo'
+        tenant_db = get_current_tenant_db() or 'tenant_horizon'
         try:
             user = User.objects.using(tenant_db).select_related('membership').get(id=user_id)
         except User.DoesNotExist:

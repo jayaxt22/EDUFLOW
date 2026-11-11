@@ -40,7 +40,7 @@ class TenantMiddleware:
 
         # Development convenience fallback
         if not tenant_slug and settings.DEBUG:
-            tenant_slug = 'demo'
+            tenant_slug = 'horizon'
 
         if not tenant_slug:
             return JsonResponse({

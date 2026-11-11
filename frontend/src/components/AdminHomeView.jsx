@@ -76,7 +76,7 @@ export const AdminHomeView = ({
             Institutional Dashboard
           </h1>
           <p className="text-slate-300 text-sm max-w-xl">
-            Central administration hub for Greenwood High Demo School. Monitor student counts,
+            Central administration hub for Horizon International Academy. Monitor student counts,
             teacher allocations, staff operations, and institutional workflows.
           </p>
         </div>

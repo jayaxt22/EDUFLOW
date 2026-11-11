@@ -1,7 +1,7 @@
 """
 Management command to seed development databases:
 1. Control DB (eduflow_control): Platform operator user, Demo institution, Tenant registry.
-2. Tenant DB (eduflow_tenant_demo): Demo school data across all 4 roles, academics, and assignments.
+2. Tenant DB (eduflow_tenant_horizon): Demo school data across all 4 roles, academics, and assignments.
 """
 
 from datetime import date
@@ -27,8 +27,8 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             '--tenant-db',
-            default='tenant_demo',
-            help='Database alias for the demo tenant (default: tenant_demo)'
+            default='tenant_horizon',
+            help='Database alias for the demo tenant (default: tenant_horizon)'
         )
 
     def handle(self, *args, **options):
@@ -60,7 +60,7 @@ class Command(BaseCommand):
         self.stdout.write(f"   - Institution: {demo_inst.name} [{demo_inst.slug}] ({'Created' if created else 'Updated'})")
 
         # Determine tenant db url based on active configuration
-        tenant_db_cfg = settings.DATABASES.get(tenant_db, settings.DATABASES.get('tenant_demo', {}))
+        tenant_db_cfg = settings.DATABASES.get(tenant_db, settings.DATABASES.get('tenant_horizon', {}))
         if tenant_db_cfg.get('ENGINE') == 'django.db.backends.postgresql':
             demo_db_url = os.environ.get('DEMO_TENANT_DATABASE_URL')
             if not demo_db_url:
@@ -68,14 +68,14 @@ class Command(BaseCommand):
                 port = tenant_db_cfg.get('PORT', '5432')
                 user = tenant_db_cfg.get('USER', 'postgres')
                 pw = tenant_db_cfg.get('PASSWORD', '')
-                name = tenant_db_cfg.get('NAME', 'eduflow_tenant_demo')
+                name = tenant_db_cfg.get('NAME', 'eduflow_tenant_horizon')
                 opts = tenant_db_cfg.get('OPTIONS', {})
                 opt_str = f"?{'&'.join(f'{k}={v}' for k, v in opts.items())}" if opts else ''
                 auth_part = f"{user}:{pw}@" if (user or pw) else ""
                 demo_db_url = f"postgresql://{auth_part}{host}:{port}/{name}{opt_str}"
             provider = 'neon' if 'neon.tech' in demo_db_url else 'postgresql'
         else:
-            tenant_sqlite_path = str(settings.BASE_DIR / 'eduflow_tenant_demo.sqlite3').replace('\\', '/')
+            tenant_sqlite_path = str(settings.BASE_DIR / 'eduflow_tenant_horizon.sqlite3').replace('\\', '/')
             demo_db_url = f'sqlite:///{tenant_sqlite_path}'
             provider = 'local'
 
@@ -90,7 +90,7 @@ class Command(BaseCommand):
         self.stdout.write(f"   - Tenant Registry: linked {demo_inst.slug} to {demo_reg.db_url}")
 
         # -------------------------------------------------------------
-        # 2. Seed Tenant DB (eduflow_tenant_demo)
+        # 2. Seed Tenant DB (eduflow_tenant_horizon)
         # -------------------------------------------------------------
         self.stdout.write(f"\n2. Seeding Tenant Database ({tenant_db})...")
 

@@ -32,12 +32,12 @@ class FeeStructureViewSet(ViewSet):
         return [IsAuthenticated()]
 
     def list(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         structures = FeeStructure.objects.using(tenant_db).select_related('academic_year', 'academic_unit').all()
         return Response({"success": True, "data": FeeStructureSerializer(structures, many=True).data})
 
     def create(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         fs = create_fee_structure(
             tenant_db=tenant_db,
             academic_year_id=request.data.get('academic_year'),
@@ -56,7 +56,7 @@ class InvoiceViewSet(ViewSet):
         return [IsAuthenticated()]
 
     def list(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         if has_perm(request.user, 'fees.read_all', request=request, view=self):
             invoices = Invoice.objects.using(tenant_db).select_related(
                 'student_membership__user', 'student_membership__student_profile', 'fee_structure'
@@ -71,7 +71,7 @@ class InvoiceViewSet(ViewSet):
         return Response({"success": True, "data": InvoiceSerializer(invoices, many=True).data})
 
     def create(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         invoice = create_invoice(
             tenant_db=tenant_db,
             student_membership_id=request.data.get('student_membership'),
@@ -96,7 +96,7 @@ class PaymentView(APIView):
         serializer = RecordPaymentInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         payment = record_payment(
             tenant_db=tenant_db,
             invoice_id=str(serializer.validated_data['invoice_id']),
@@ -111,7 +111,7 @@ class PaymentView(APIView):
         return Response({"success": True, "data": PaymentSerializer(payment).data}, status=status.HTTP_201_CREATED)
 
     def get(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         payments = Payment.objects.using(tenant_db).select_related('invoice', 'recorded_by__user').all().order_by('-payment_date')[:50]
         return Response({"success": True, "data": PaymentSerializer(payments, many=True).data})
 
@@ -124,7 +124,7 @@ class RefundView(APIView):
     permission_classes = [IsAuthenticated, HasEduFlowPerm('fees.refunds_crud')]
 
     def post(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         refund = process_refund(
             tenant_db=tenant_db,
             payment_id=request.data.get('payment_id'),
@@ -143,6 +143,6 @@ class FinanceMetricsView(APIView):
     permission_classes = [IsAuthenticated, HasEduFlowPerm('fees.read_all')]
 
     def get(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         metrics = get_finance_metrics(tenant_db)
         return Response({"success": True, "data": metrics})

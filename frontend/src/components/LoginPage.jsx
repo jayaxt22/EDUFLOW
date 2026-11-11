@@ -3,16 +3,16 @@ import { useAuth } from '../context/AuthContext';
 import { School, Lock, User, AlertCircle, ArrowRight, ShieldCheck, ArrowLeft } from 'lucide-react';
 
 const PRESET_ACCOUNTS = [
-  { label: 'Admin', username: 'admin_demo', password: 'SchoolDemoPass123!', role: 'ADMIN', name: 'Dr. Alistair Vance' },
-  { label: 'Teacher', username: 'teacher_demo', password: 'SchoolDemoPass123!', role: 'TEACHER', name: 'Sarah Jenkins' },
-  { label: 'Student', username: 'student_demo', password: 'SchoolDemoPass123!', role: 'STUDENT', name: 'Leo Miller' },
-  { label: 'Finance Staff', username: 'finance_demo', password: 'SchoolDemoPass123!', role: 'STAFF', name: 'Eleanor Rigby' },
+  { label: 'Admin', username: 'admin_horizon', password: 'HorizonPass123!', role: 'ADMIN', name: 'Dr. Alistair Vance' },
+  { label: 'Teacher', username: 'teacher_horizon', password: 'HorizonPass123!', role: 'TEACHER', name: 'Sarah Jenkins' },
+  { label: 'Student', username: 'student_horizon', password: 'HorizonPass123!', role: 'STUDENT', name: 'Leo Miller' },
+  { label: 'Finance Staff', username: 'finance_horizon', password: 'HorizonPass123!', role: 'STAFF', name: 'Eleanor Rigby' },
 ];
 
 export const LoginPage = ({ onBackToHome }) => {
   const { login, tenantSlug, setTenantSlug } = useAuth();
-  const [username, setUsername] = useState('admin_demo');
-  const [password, setPassword] = useState('SchoolDemoPass123!');
+  const [username, setUsername] = useState('admin_horizon');
+  const [password, setPassword] = useState('HorizonPass123!');
   const [selectedRole, setSelectedRole] = useState('ADMIN');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -115,7 +115,7 @@ export const LoginPage = ({ onBackToHome }) => {
               onChange={(e) => setTenantSlug(e.target.value)}
               required
               className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-mono text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#FACC15]"
-              placeholder="e.g. demo"
+              placeholder="e.g. horizon"
             />
           </div>
 
@@ -134,7 +134,7 @@ export const LoginPage = ({ onBackToHome }) => {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 className="w-full pl-9 pr-3.5 py-2 bg-white border border-gray-200 rounded-lg text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#FACC15]"
-                placeholder="e.g. admin_demo (or admin)"
+                placeholder="e.g. admin_horizon (or admin)"
               />
             </div>
           </div>

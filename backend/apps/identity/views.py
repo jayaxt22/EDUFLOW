@@ -52,7 +52,7 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         tenant_slug = getattr(request.tenant, 'slug', 'demo') if hasattr(request, 'tenant') else 'demo'
 
         user = authenticate_tenant_user(
@@ -130,7 +130,7 @@ class TokenRefreshCookieView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        raw_refresh = request.COOKIES.get('refresh_token') or request.data.get('refresh')
+        raw_refresh = request.COOKIES.get('refresh_token') or request.data.get('refresh') or request.headers.get('x-refresh-token')
         if not raw_refresh:
             return Response({
                 "success": False,
@@ -222,7 +222,7 @@ class UserViewSet(ViewSet):
         return [IsAuthenticated()]
 
     def next_identifier(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         role = request.query_params.get('role', 'STUDENT').upper()
         if role not in ('STUDENT', 'TEACHER', 'STAFF', 'ADMIN'):
             return Response({
@@ -242,7 +242,7 @@ class UserViewSet(ViewSet):
         serializer = UnifiedUserCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         membership = create_user_with_membership(tenant_db, serializer.validated_data)
 
         return Response({
@@ -254,7 +254,7 @@ class UserViewSet(ViewSet):
         serializer = AdminUserUpdateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         user = update_user_by_admin(tenant_db, str(pk), serializer.validated_data)
 
         return Response({
@@ -263,7 +263,7 @@ class UserViewSet(ViewSet):
         })
 
     def destroy(self, request, pk=None):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         user = deactivate_user(tenant_db, str(pk))
 
         return Response({
@@ -275,7 +275,7 @@ class UserViewSet(ViewSet):
         })
 
     def list(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
 
         if has_perm(request.user, 'users.read_all', request=request, view=self):
             # Admin view: full user details
@@ -340,7 +340,7 @@ class UserMeView(APIView):
         serializer = UpdateUserProfileSerializer(data=request.data, context={'request': request}, partial=True)
         serializer.is_valid(raise_exception=True)
 
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         updated_user = update_user_profile(tenant_db, request.user, serializer.validated_data)
 
         return Response({
@@ -365,7 +365,7 @@ class ChangePasswordView(APIView):
         serializer = ChangePasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         change_user_password(
             tenant_db=tenant_db,
             user=request.user,

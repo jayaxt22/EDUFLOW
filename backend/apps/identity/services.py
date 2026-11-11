@@ -91,7 +91,7 @@ def get_user_permissions(membership: Membership, request=None, view=None) -> lis
     # Evaluate conditional permissions per doc/rbac.md:
     # 1. teacher.my_class.view requires teaching_assignments.is_class_teacher = TRUE
     if membership.role == 'TEACHER':
-        tenant_db = membership._state.db or 'tenant_demo'
+        tenant_db = membership._state.db or 'tenant_horizon'
         is_class_teacher = TeachingAssignment.objects.using(tenant_db).filter(
             membership=membership,
             is_class_teacher=True

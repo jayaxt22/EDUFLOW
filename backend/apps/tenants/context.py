@@ -42,7 +42,7 @@ class tenant_context:
     """
     Context manager to execute a code block under a specified tenant database context.
     Example:
-        with tenant_context('tenant_demo', slug='demo'):
+        with tenant_context('tenant_horizon', slug='demo'):
             User.objects.all()
     """
     def __init__(self, db_alias: str, slug: Optional[str] = None):

@@ -25,6 +25,13 @@ def parse_db_url(url: str, base_dir=None) -> dict:
         'CONN_HEALTH_CHECKS': False,
         'OPTIONS': {},
         'TIME_ZONE': None,
+        'TEST': {
+            'CHARSET': None,
+            'COLLATION': None,
+            'MIGRATE': True,
+            'MIRROR': None,
+            'NAME': None,
+        },
     }
 
     if scheme in ('postgresql', 'postgres'):

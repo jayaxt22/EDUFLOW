@@ -37,13 +37,13 @@ class AnnouncementViewSet(ViewSet):
         return [IsAuthenticated()]
 
     def list(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         announcements = get_visible_announcements(tenant_db, request.user.membership)
         serializer = AnnouncementSerializer(announcements, many=True)
         return Response({"success": True, "data": serializer.data})
 
     def create(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         serializer = CreateAnnouncementInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -79,7 +79,7 @@ class AnnouncementViewSet(ViewSet):
 
     @action(detail=True, methods=['post'])
     def forward(self, request, pk=None):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         serializer = ForwardAnnouncementInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 

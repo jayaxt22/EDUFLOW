@@ -8,25 +8,25 @@ from rest_framework.test import APIClient
 from apps.identity.services import create_user_with_membership
 from apps.tenants.models import Institution, TenantRegistry
 
-@pytest.mark.django_db(databases=['default', 'tenant_demo'])
+@pytest.mark.django_db(databases='__all__')
 class TestAuthJWT:
     @pytest.fixture(autouse=True)
     def setup_tenant_and_users(self):
         self.client = APIClient()
 
-        # Ensure demo institution exists in control DB ('default')
+        # Ensure horizon institution exists in control DB ('default')
         self.inst, _ = Institution.objects.using('default').update_or_create(
-            slug='demo',
-            defaults={'name': 'Demo School', 'status': 'ACTIVE'}
+            slug='horizon',
+            defaults={'name': 'Horizon School', 'status': 'ACTIVE'}
         )
         TenantRegistry.objects.using('default').update_or_create(
             institution=self.inst,
-            defaults={'db_url': 'sqlite:///eduflow_tenant_demo.sqlite3', 'status': 'ACTIVE'}
+            defaults={'db_url': 'sqlite:///eduflow_tenant_horizon.sqlite3', 'status': 'ACTIVE'}
         )
 
-        # Create Teacher user in tenant_demo
-        self.teacher_mem = create_user_with_membership('tenant_demo', {
-            'email': 'sarah@demo.edu',
+        # Create Teacher user in tenant_horizon
+        self.teacher_mem = create_user_with_membership('tenant_horizon', {
+            'email': 'sarah@horizon.edu',
             'username': 'sarah_teacher',
             'password': 'SecureTeacherPass123!',
             'full_name': 'Sarah Jenkins',
@@ -34,9 +34,9 @@ class TestAuthJWT:
             'employee_id': 'T-001',
         })
 
-        # Create Finance Staff in tenant_demo
-        self.finance_mem = create_user_with_membership('tenant_demo', {
-            'email': 'finance@demo.edu',
+        # Create Finance Staff in tenant_horizon
+        self.finance_mem = create_user_with_membership('tenant_horizon', {
+            'email': 'finance@horizon.edu',
             'username': 'finance_user',
             'password': 'SecureFinancePass123!',
             'full_name': 'Eleanor Rigby',
@@ -52,7 +52,7 @@ class TestAuthJWT:
             'username': 'sarah_teacher',
             'password': 'SecureTeacherPass123!'
         }
-        response = self.client.post(url, payload, HTTP_X_TENANT_SLUG='demo')
+        response = self.client.post(url, payload, HTTP_X_TENANT_SLUG='horizon')
 
         assert response.status_code == 200
         assert response.data['success'] is True
@@ -72,7 +72,7 @@ class TestAuthJWT:
             'username': 'sarah_teacher',
             'password': 'WrongPassword123!'
         }
-        response = self.client.post(url, payload, HTTP_X_TENANT_SLUG='demo')
+        response = self.client.post(url, payload, HTTP_X_TENANT_SLUG='horizon')
 
         assert response.status_code == 401
         assert response.data['success'] is False
@@ -81,7 +81,7 @@ class TestAuthJWT:
     def test_logout_clears_cookies(self):
         """Logout clears access_token and refresh_token cookies."""
         url = reverse('auth-logout')
-        response = self.client.post(url, HTTP_X_TENANT_SLUG='demo')
+        response = self.client.post(url, HTTP_X_TENANT_SLUG='horizon')
 
         assert response.status_code == 200
         assert response.data['success'] is True
@@ -95,12 +95,12 @@ class TestAuthJWT:
         login_resp = self.client.post(login_url, {
             'username': 'sarah_teacher',
             'password': 'SecureTeacherPass123!'
-        }, HTTP_X_TENANT_SLUG='demo')
+        }, HTTP_X_TENANT_SLUG='horizon')
         assert login_resp.status_code == 200
 
         # Request /api/v1/auth/me/
         me_url = reverse('auth-me')
-        resp = self.client.get(me_url, HTTP_X_TENANT_SLUG='demo')
+        resp = self.client.get(me_url, HTTP_X_TENANT_SLUG='horizon')
         assert resp.status_code == 200
         teacher_perms = resp.data['data']['permissions']
         assert 'students.read_directory' in teacher_perms
@@ -111,10 +111,10 @@ class TestAuthJWT:
         login_resp2 = self.client.post(login_url, {
             'username': 'finance_user',
             'password': 'SecureFinancePass123!'
-        }, HTTP_X_TENANT_SLUG='demo')
+        }, HTTP_X_TENANT_SLUG='horizon')
         assert login_resp2.status_code == 200
 
-        resp2 = self.client.get(me_url, HTTP_X_TENANT_SLUG='demo')
+        resp2 = self.client.get(me_url, HTTP_X_TENANT_SLUG='horizon')
         assert resp2.status_code == 200
         finance_perms = resp2.data['data']['permissions']
         assert 'fees.structures_crud' in finance_perms
@@ -128,7 +128,7 @@ class TestAuthJWT:
         login_resp = self.client.post(login_url, {
             'username': 'sarah_teacher',
             'password': 'SecureTeacherPass123!'
-        }, HTTP_X_TENANT_SLUG='demo')
+        }, HTTP_X_TENANT_SLUG='horizon')
         assert login_resp.status_code == 200
         assert 'refresh_token' in login_resp.cookies
 
@@ -137,26 +137,26 @@ class TestAuthJWT:
 
         # Ensure calling protected endpoint without access_token fails with 401
         me_url = reverse('auth-me')
-        unauth_resp = self.client.get(me_url, HTTP_X_TENANT_SLUG='demo')
+        unauth_resp = self.client.get(me_url, HTTP_X_TENANT_SLUG='horizon')
         assert unauth_resp.status_code == 401
 
         # Now refresh the token
         refresh_url = reverse('auth-refresh')
-        refresh_resp = self.client.post(refresh_url, HTTP_X_TENANT_SLUG='demo')
+        refresh_resp = self.client.post(refresh_url, HTTP_X_TENANT_SLUG='horizon')
         assert refresh_resp.status_code == 200
         assert refresh_resp.data['success'] is True
         assert 'access_token' in refresh_resp.cookies
         assert refresh_resp.cookies['access_token']['httponly'] is True
 
         # Now calling protected endpoint succeeds with the refreshed access_token cookie
-        me_resp = self.client.get(me_url, HTTP_X_TENANT_SLUG='demo')
+        me_resp = self.client.get(me_url, HTTP_X_TENANT_SLUG='horizon')
         assert me_resp.status_code == 200
-        assert me_resp.data['data']['email'] == 'sarah@demo.edu'
+        assert me_resp.data['data']['email'] == 'sarah@horizon.edu'
 
     def test_refresh_token_missing_cookie_returns_401(self):
         """POST /api/v1/auth/refresh/ without refresh token cookie returns 401."""
         refresh_url = reverse('auth-refresh')
-        resp = self.client.post(refresh_url, HTTP_X_TENANT_SLUG='demo')
+        resp = self.client.post(refresh_url, HTTP_X_TENANT_SLUG='horizon')
         assert resp.status_code == 401
         assert resp.data['success'] is False
         assert resp.data['error']['code'] == 'REFRESH_TOKEN_REQUIRED'
@@ -165,7 +165,7 @@ class TestAuthJWT:
         """POST /api/v1/auth/refresh/ with invalid refresh token returns 401."""
         refresh_url = reverse('auth-refresh')
         self.client.cookies['refresh_token'] = 'invalid.junk.token'
-        resp = self.client.post(refresh_url, HTTP_X_TENANT_SLUG='demo')
+        resp = self.client.post(refresh_url, HTTP_X_TENANT_SLUG='horizon')
         assert resp.status_code == 401
         assert resp.data['success'] is False
         assert resp.data['error']['code'] == 'TOKEN_INVALID_OR_EXPIRED'
@@ -179,14 +179,14 @@ class TestAuthJWT:
         )
         TenantRegistry.objects.using('default').update_or_create(
             institution=other_inst,
-            defaults={'db_url': 'sqlite:///eduflow_tenant_demo.sqlite3', 'status': 'ACTIVE'}
+            defaults={'db_url': 'sqlite:///eduflow_tenant_horizon.sqlite3', 'status': 'ACTIVE'}
         )
 
         login_url = reverse('auth-login')
         login_resp = self.client.post(login_url, {
             'username': 'sarah_teacher',
             'password': 'SecureTeacherPass123!'
-        }, HTTP_X_TENANT_SLUG='demo')
+        }, HTTP_X_TENANT_SLUG='horizon')
         assert login_resp.status_code == 200
 
         # Attempt to refresh token under tenant 'other'

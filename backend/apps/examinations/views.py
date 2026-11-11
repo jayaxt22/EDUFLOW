@@ -32,12 +32,12 @@ class ExamViewSet(ViewSet):
         return [IsAuthenticated()]
 
     def list(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         exams = Exam.objects.using(tenant_db).select_related('academic_year').all().order_by('-start_date')
         return Response({"success": True, "data": ExamSerializer(exams, many=True).data})
 
     def create(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         exam = create_exam(
             tenant_db=tenant_db,
             academic_year_id=request.data.get('academic_year'),
@@ -55,7 +55,7 @@ class ExamSubjectViewSet(ViewSet):
         return [IsAuthenticated()]
 
     def list(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         exam_id = request.query_params.get('exam')
         qs = ExamSubject.objects.using(tenant_db).select_related('exam', 'subject', 'academic_unit').all()
         if exam_id:
@@ -63,7 +63,7 @@ class ExamSubjectViewSet(ViewSet):
         return Response({"success": True, "data": ExamSubjectSerializer(qs, many=True).data})
 
     def create(self, request):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         exam_subject = add_exam_subject(
             tenant_db=tenant_db,
             exam_id=request.data.get('exam'),
@@ -88,7 +88,7 @@ class BulkMarksEntryView(APIView):
         serializer = BulkMarksSubmissionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         result = enter_marks_bulk(
             tenant_db=tenant_db,
             exam_subject_id=str(serializer.validated_data['exam_subject_id']),
@@ -115,7 +115,7 @@ class PublishExamView(APIView):
     permission_classes = [IsAuthenticated, HasEduFlowPerm('examinations.manage')]
 
     def post(self, request, pk):
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         exam = publish_exam_results(
             tenant_db=tenant_db,
             exam_id=str(pk),
@@ -142,7 +142,7 @@ class ExamMarksGridView(APIView):
                 "error": {"code": "VALIDATION_ERROR", "message": "exam_subject query param is required."}
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        tenant_db = getattr(request, 'tenant_db', 'tenant_demo')
+        tenant_db = getattr(request, 'tenant_db', 'tenant_horizon')
         data = get_exam_marks_grid(tenant_db, exam_subject_id)
         return Response({
             "success": True,

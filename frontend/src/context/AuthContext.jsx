@@ -6,7 +6,7 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [tenantSlug, setTenantSlugState] = useState('demo');
+  const [tenantSlug, setTenantSlugState] = useState('horizon');
   const [loading, setLoading] = useState(true);
 
   const updateTenantSlug = (slug) => {

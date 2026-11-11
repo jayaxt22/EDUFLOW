@@ -15,7 +15,7 @@ class TenantRouter:
     """
     Directs database operations according to the project-per-tenant architecture:
     - Control apps route strictly to 'default' (eduflow_control).
-    - Tenant apps route strictly to the active tenant database (e.g. 'tenant_demo').
+    - Tenant apps route strictly to the active tenant database (e.g. 'tenant_horizon').
     - Cross-database foreign keys/relations are prohibited.
     - Migrations are segregated by database target.
     """
@@ -26,7 +26,7 @@ class TenantRouter:
             return 'default'
         if app_label in TENANT_APPS:
             tenant_db = get_current_tenant_db()
-            return tenant_db or 'tenant_demo'
+            return tenant_db or 'tenant_horizon'
         return 'default'
 
     def db_for_write(self, model, **hints):
@@ -35,7 +35,7 @@ class TenantRouter:
             return 'default'
         if app_label in TENANT_APPS:
             tenant_db = get_current_tenant_db()
-            return tenant_db or 'tenant_demo'
+            return tenant_db or 'tenant_horizon'
         return 'default'
 
     def allow_relation(self, obj1, obj2, **hints):
