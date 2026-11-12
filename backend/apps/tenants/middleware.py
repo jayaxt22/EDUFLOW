@@ -13,7 +13,7 @@ import logging
 
 logger = logging.getLogger('apps.tenants.middleware')
 
-EXEMPT_PATHS = {'/health/', '/api/v1/control/'}
+EXEMPT_PATHS = {'/health/', '/api/v1/control/', '/admin/'}
 
 class TenantMiddleware:
     """

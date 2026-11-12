@@ -24,6 +24,7 @@ if '*' not in ALLOWED_HOSTS and '.vercel.app' not in ALLOWED_HOSTS:
 
 INSTALLED_APPS = [
     # Django core apps
+    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
