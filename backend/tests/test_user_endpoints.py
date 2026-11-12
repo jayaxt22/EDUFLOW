@@ -79,6 +79,72 @@ class TestUserEndpoints:
         assert response.data['data']['email'] == 'lisa@demo.edu'
         assert response.data['data']['role'] == 'STUDENT'
 
+    def test_create_user_duplicate_email_returns_400(self):
+        """Creating a user with an already registered email returns 400 Bad Request, never 500."""
+        self.client.force_authenticate(user=self.admin_mem.user)
+        payload = {
+            'email': self.admin_mem.user.email,  # Duplicate!
+            'username': 'unique_user_email_test',
+            'password': 'Password123!',
+            'full_name': 'Duplicate Email User',
+            'role': 'STUDENT',
+            'admission_number': 'STU-DUP-EMAIL',
+        }
+        response = self.client.post(self.users_url, payload, HTTP_X_TENANT_SLUG='demo')
+        assert response.status_code == 400
+        assert response.data['success'] is False
+        assert 'email' in response.data['error']['details']
+
+    def test_create_user_duplicate_username_returns_400(self):
+        """Creating a user with an already taken username returns 400 Bad Request, never 500."""
+        self.client.force_authenticate(user=self.admin_mem.user)
+        payload = {
+            'email': 'unique_email_for_dup_user@demo.edu',
+            'username': self.admin_mem.user.username,  # Duplicate!
+            'password': 'Password123!',
+            'full_name': 'Duplicate Username User',
+            'role': 'TEACHER',
+            'employee_id': 'T-UNIQUE-EMP-TEST',
+        }
+        response = self.client.post(self.users_url, payload, HTTP_X_TENANT_SLUG='demo')
+        assert response.status_code == 400
+        assert response.data['success'] is False
+        assert 'username' in response.data['error']['details']
+
+    def test_create_user_duplicate_admission_number_returns_400(self):
+        """Creating a student with an already assigned admission number returns 400 Bad Request, never 500."""
+        self.client.force_authenticate(user=self.admin_mem.user)
+        # First student has admission_number 'STU-BART-001' from fixture
+        payload = {
+            'email': 'another_student@demo.edu',
+            'username': 'another_student',
+            'password': 'Password123!',
+            'full_name': 'Another Student',
+            'role': 'STUDENT',
+            'admission_number': 'STU-BART-001',  # Duplicate!
+        }
+        response = self.client.post(self.users_url, payload, HTTP_X_TENANT_SLUG='demo')
+        assert response.status_code == 400
+        assert response.data['success'] is False
+        assert 'admission_number' in response.data['error']['details']
+
+    def test_create_user_duplicate_employee_id_returns_400(self):
+        """Creating a teacher with an already assigned employee ID returns 400 Bad Request, never 500."""
+        self.client.force_authenticate(user=self.admin_mem.user)
+        # Teacher from fixture has employee_id 'T-101'
+        payload = {
+            'email': 'another_teacher@demo.edu',
+            'username': 'another_teacher',
+            'password': 'Password123!',
+            'full_name': 'Another Teacher',
+            'role': 'TEACHER',
+            'employee_id': 'T-101',  # Duplicate!
+        }
+        response = self.client.post(self.users_url, payload, HTTP_X_TENANT_SLUG='demo')
+        assert response.status_code == 400
+        assert response.data['success'] is False
+        assert 'employee_id' in response.data['error']['details']
+
     def test_create_user_deny_teacher_403(self):
         """Variant 2: Deny (403) - Teacher lacks users.create permission."""
         self.client.force_authenticate(user=self.teacher_mem.user)

@@ -9,7 +9,7 @@ from django.db import IntegrityError
 from apps.identity.services import create_user_with_membership
 from apps.identity.models import User, Membership, StudentProfile, TeacherProfile, StaffProfile
 
-@pytest.mark.django_db(databases=['default', 'tenant_demo'])
+@pytest.mark.django_db(databases=['default', 'tenant_demo', 'tenant_horizon'])
 class TestUserService:
     def test_happy_path_teacher_creation(self):
         """Creating a Teacher creates User, Membership, and TeacherProfile."""
@@ -116,13 +116,99 @@ class TestUserService:
             'admission_number': 'ADMIT-DUP-1',  # Duplicate!
         }
 
-        with pytest.raises(IntegrityError):
+        with pytest.raises(ValidationError) as exc_info:
             create_user_with_membership('tenant_demo', duplicate_data)
+
+        assert 'admission_number' in exc_info.value.detail
 
         # Confirm rollback: No orphan user or membership created!
         assert User.objects.using('tenant_demo').count() == initial_user_count
         assert Membership.objects.using('tenant_demo').count() == initial_mem_count
         assert not User.objects.using('tenant_demo').filter(username='stu2').exists()
+
+    def test_duplicate_email_validation_failure(self):
+        """Attempting to create a user with duplicate email raises ValidationError."""
+        create_user_with_membership('tenant_demo', {
+            'email': 'dup_email@demo.edu',
+            'username': 'user_first_email',
+            'password': 'Pass12345!',
+            'full_name': 'First Email User',
+            'role': 'ADMIN',
+        })
+        with pytest.raises(ValidationError) as exc_info:
+            create_user_with_membership('tenant_demo', {
+                'email': 'dup_email@demo.edu',
+                'username': 'user_second_email',
+                'password': 'Pass12345!',
+                'full_name': 'Second Email User',
+                'role': 'ADMIN',
+            })
+        assert 'email' in exc_info.value.detail
+
+    def test_duplicate_username_validation_failure(self):
+        """Attempting to create a user with duplicate username raises ValidationError."""
+        create_user_with_membership('tenant_demo', {
+            'email': 'user1_username@demo.edu',
+            'username': 'same_username',
+            'password': 'Pass12345!',
+            'full_name': 'First Username User',
+            'role': 'TEACHER',
+            'employee_id': 'T-UNIQUE-101',
+        })
+        with pytest.raises(ValidationError) as exc_info:
+            create_user_with_membership('tenant_demo', {
+                'email': 'user2_username@demo.edu',
+                'username': 'same_username',
+                'password': 'Pass12345!',
+                'full_name': 'Second Username User',
+                'role': 'TEACHER',
+                'employee_id': 'T-UNIQUE-102',
+            })
+        assert 'username' in exc_info.value.detail
+
+    def test_duplicate_teacher_employee_id_validation_failure(self):
+        """Attempting to create Teacher with duplicate employee_id raises ValidationError."""
+        create_user_with_membership('tenant_demo', {
+            'email': 'teacher1@demo.edu',
+            'username': 'teacher1',
+            'password': 'Pass12345!',
+            'full_name': 'Teacher 1',
+            'role': 'TEACHER',
+            'employee_id': 'T-SAME-ID',
+        })
+        with pytest.raises(ValidationError) as exc_info:
+            create_user_with_membership('tenant_demo', {
+                'email': 'teacher2@demo.edu',
+                'username': 'teacher2',
+                'password': 'Pass12345!',
+                'full_name': 'Teacher 2',
+                'role': 'TEACHER',
+                'employee_id': 'T-SAME-ID',
+            })
+        assert 'employee_id' in exc_info.value.detail
+
+    def test_duplicate_staff_employee_id_validation_failure(self):
+        """Attempting to create Staff with duplicate employee_id raises ValidationError."""
+        create_user_with_membership('tenant_demo', {
+            'email': 'staff1@demo.edu',
+            'username': 'staff1',
+            'password': 'Pass12345!',
+            'full_name': 'Staff 1',
+            'role': 'STAFF',
+            'staff_type': 'FINANCE',
+            'employee_id': 'EMP-SAME-ID',
+        })
+        with pytest.raises(ValidationError) as exc_info:
+            create_user_with_membership('tenant_demo', {
+                'email': 'staff2@demo.edu',
+                'username': 'staff2',
+                'password': 'Pass12345!',
+                'full_name': 'Staff 2',
+                'role': 'STAFF',
+                'staff_type': 'LIBRARY',
+                'employee_id': 'EMP-SAME-ID',
+            })
+        assert 'employee_id' in exc_info.value.detail
 
     def test_student_creation_with_enrollment_happy_path(self):
         """Creating Student with academic_unit_id, roll_number, and avatar creates StudentEnrollment atomically."""

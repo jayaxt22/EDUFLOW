@@ -74,11 +74,27 @@ def parse_db_url(url: str, base_dir=None) -> dict:
 
 def register_tenant_database(db_alias: str, db_url: str):
     """
-    Registers a tenant database in django.db.connections.databases if not already present.
+    Registers a tenant database in django.db.connections.databases if not already present,
+    or updates the configuration if the database target has changed.
+    Never clobbers an active test database managed by the test runner.
     """
     if db_alias in connections.databases:
-        return
+        existing = connections.databases[db_alias]
+        existing_name = str(existing.get('NAME', ''))
+        # Never clobber an active test runner database
+        if existing_name.startswith('test_') or '/test_' in existing_name or '\\test_' in existing_name:
+            return
 
-    db_config = parse_db_url(db_url)
+        db_config = parse_db_url(db_url)
+        if existing.get('NAME') == db_config.get('NAME') and existing.get('HOST') == db_config.get('HOST'):
+            return
+    else:
+        db_config = parse_db_url(db_url)
+
     connections.databases[db_alias] = db_config
+    if db_alias in connections:
+        try:
+            connections[db_alias].close()
+        except Exception:
+            pass
     logger.info(f"Registered tenant database connection '{db_alias}' -> {db_config['ENGINE']}")

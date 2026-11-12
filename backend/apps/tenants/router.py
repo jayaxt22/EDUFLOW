@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger('apps.tenants.router')
 
 CONTROL_APPS = {'tenants', 'auth', 'contenttypes', 'sessions', 'admin', 'messages'}
-TENANT_APPS = {'identity', 'academics', 'attendance', 'announcements', 'fees'}
+TENANT_APPS = {'identity', 'academics', 'attendance', 'announcements', 'fees', 'examinations'}
 
 class TenantRouter:
     """
@@ -25,6 +25,9 @@ class TenantRouter:
         if app_label in CONTROL_APPS:
             return 'default'
         if app_label in TENANT_APPS:
+            instance = hints.get('instance')
+            if instance and getattr(instance._state, 'db', None):
+                return instance._state.db
             tenant_db = get_current_tenant_db()
             return tenant_db or 'tenant_horizon'
         return 'default'
@@ -34,6 +37,9 @@ class TenantRouter:
         if app_label in CONTROL_APPS:
             return 'default'
         if app_label in TENANT_APPS:
+            instance = hints.get('instance')
+            if instance and getattr(instance._state, 'db', None):
+                return instance._state.db
             tenant_db = get_current_tenant_db()
             return tenant_db or 'tenant_horizon'
         return 'default'

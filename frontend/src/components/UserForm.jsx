@@ -51,13 +51,9 @@ export const UserForm = ({ isOpen, onClose, onUserCreated, initialData = null })
   }, [isOpen]);
 
   const getDefaultIdentifier = (r) => {
-    switch (r) {
-      case 'STUDENT': return 'STU-1001';
-      case 'TEACHER': return 'T-1001';
-      case 'STAFF': return 'EMP-1001';
-      case 'ADMIN': return 'ADM-1001';
-      default: return '';
-    }
+    // Return empty so that dynamic backend sequence fetching populates the next available identifier
+    // without colliding with existing seeds.
+    return '';
   };
 
   const fetchNextIdentifier = async (targetRole) => {
@@ -164,14 +160,12 @@ export const UserForm = ({ isOpen, onClose, onUserCreated, initialData = null })
   const handleRoleSelect = (newRole) => {
     if (isEditMode || newRole === role) return;
     setRole(newRole);
-    const defaultId = getDefaultIdentifier(newRole);
-    setFormData((prev) => {
-      const updated = { ...prev };
-      if (newRole === 'STUDENT') updated.admission_number = defaultId;
-      else if (newRole === 'TEACHER' || newRole === 'STAFF') updated.employee_id = defaultId;
-      else if (newRole === 'ADMIN') updated.username = defaultId;
-      return updated;
-    });
+    setFormData((prev) => ({
+      ...prev,
+      admission_number: '',
+      employee_id: '',
+      username: newRole === 'ADMIN' ? '' : prev.username,
+    }));
     fetchNextIdentifier(newRole);
   };
 
@@ -467,7 +461,7 @@ export const UserForm = ({ isOpen, onClose, onUserCreated, initialData = null })
                   onChange={handleChange}
                   required
                   disabled={isEditMode}
-                  placeholder={role === 'ADMIN' ? 'ADM-1001' : 'john_doe'}
+                  placeholder={fetchingId && role === 'ADMIN' ? 'Auto-generating...' : role === 'ADMIN' ? 'e.g. ADM-1002' : 'e.g. john_doe'}
                   className={`w-full px-3 py-2 border rounded-lg text-sm ${
                     isEditMode
                       ? 'bg-gray-50 dark:bg-slate-900/40 text-gray-400 dark:text-slate-500 border-gray-200 dark:border-slate-700 cursor-not-allowed'
@@ -573,7 +567,7 @@ export const UserForm = ({ isOpen, onClose, onUserCreated, initialData = null })
                     value={formData.admission_number}
                     onChange={handleChange}
                     required
-                    placeholder="STU-1001"
+                    placeholder={fetchingId ? 'Auto-generating...' : 'e.g. STU-1002'}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-sm text-[#1E293B] dark:text-slate-100 placeholder:text-gray-400 dark:placeholder-slate-400 focus:ring-2 focus:ring-[#FACC15]"
                   />
                 </div>
@@ -670,7 +664,7 @@ export const UserForm = ({ isOpen, onClose, onUserCreated, initialData = null })
                     value={formData.employee_id}
                     onChange={handleChange}
                     required
-                    placeholder="T-1001"
+                    placeholder={fetchingId ? 'Auto-generating...' : 'e.g. T-2002'}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-sm text-[#1E293B] dark:text-slate-100 placeholder:text-gray-400 dark:placeholder-slate-400 focus:ring-2 focus:ring-[#FACC15]"
                   />
                 </div>
@@ -710,7 +704,7 @@ export const UserForm = ({ isOpen, onClose, onUserCreated, initialData = null })
                     value={formData.employee_id}
                     onChange={handleChange}
                     required
-                    placeholder="EMP-1001"
+                    placeholder={fetchingId ? 'Auto-generating...' : 'e.g. EMP-1002'}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-sm text-[#1E293B] dark:text-slate-100 placeholder:text-gray-400 dark:placeholder-slate-400 focus:ring-2 focus:ring-[#FACC15]"
                   />
                 </div>

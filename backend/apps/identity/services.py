@@ -4,7 +4,7 @@ Non-negotiable rule:
 Views are thin; all validation and transactional logic lives here.
 """
 
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
@@ -158,6 +158,7 @@ def create_user_with_membership(tenant_db: str, data: dict) -> Membership:
     the entire user creation rolls back.
     If admission_number (Student) or employee_id (Teacher/Staff) is missing,
     it is automatically generated uniquely.
+    Guarantees validation errors on unique constraint collisions (email, username, admission_number, employee_id).
     """
     from datetime import date
     from apps.academics.models import AcademicUnit, StudentEnrollment
@@ -170,6 +171,12 @@ def create_user_with_membership(tenant_db: str, data: dict) -> Membership:
     if not password or len(password) < 8:
         raise ValidationError({"password": "Password must be at least 8 characters long."})
 
+    email = str(data.get('email', '')).strip().lower()
+    if not email:
+        raise ValidationError({"email": "Email address is required."})
+    if User.objects.using(tenant_db).filter(email__iexact=email).exists():
+        raise ValidationError({"email": "A user with this email address already exists."})
+
     academic_unit_id = data.get('academic_unit_id')
     roll_number = data.get('roll_number')
 
@@ -180,100 +187,139 @@ def create_user_with_membership(tenant_db: str, data: dict) -> Membership:
         else:
             raise ValidationError({"username": "Username is required."})
 
-    with transaction.atomic(using=tenant_db):
-        # 1. Create User
-        user = User(
-            email=data['email'],
-            username=str(username).strip(),
-            full_name=data['full_name'],
-            avatar=data.get('avatar') or None,
-            dob=data.get('dob') or None,
-            nationality=data.get('nationality') or None,
-            date_of_joining=data.get('date_of_joining') or None,
-            phone=data.get('phone', ''),
-            gender=data.get('gender', None),
-            current_address=data.get('current_address', ''),
-            emergency_contact_name=data.get('emergency_contact_name', ''),
-            emergency_contact_phone=data.get('emergency_contact_phone', ''),
-            emergency_contact_relation=data.get('emergency_contact_relation', ''),
-            password_hash=make_password(password, hasher='argon2'),
-            is_active=True
-        )
-        user.save(using=tenant_db)
+    clean_username = str(username).strip()
+    if User.objects.using(tenant_db).filter(username__iexact=clean_username).exists():
+        raise ValidationError({"username": "This username is already taken."})
 
-        # 2. Create Membership
-        membership = Membership(
-            user=user,
-            role=role,
-            status=data.get('status', 'ACTIVE')
-        )
-        membership.save(using=tenant_db)
+    # Validate role-specific identifiers prior to transaction
+    admission_number = None
+    if role == 'STUDENT':
+        raw_adm = data.get('admission_number')
+        if not raw_adm or str(raw_adm).strip() in ('', 'null', 'undefined'):
+            admission_number = generate_unique_identifier(tenant_db, 'STUDENT')
+        else:
+            admission_number = str(raw_adm).strip()
+            if StudentProfile.objects.using(tenant_db).filter(admission_number__iexact=admission_number).exists():
+                raise ValidationError({"admission_number": f"Admission number '{admission_number}' is already assigned to another student."})
 
-        # 3. Create Role-Specific Profile & Optional Enrollment
-        if role == 'STUDENT':
-            admission_number = data.get('admission_number')
-            if not admission_number or str(admission_number).strip() in ('', 'null', 'undefined'):
-                admission_number = generate_unique_identifier(tenant_db, 'STUDENT')
-            StudentProfile.objects.using(tenant_db).create(
-                membership=membership,
-                admission_number=str(admission_number).strip(),
-                dob=data.get('dob', None),
-                guardian_name=data.get('guardian_name', ''),
-                guardian_phone=data.get('guardian_phone', '')
+    employee_id = None
+    if role == 'TEACHER':
+        raw_emp = data.get('employee_id')
+        if not raw_emp or str(raw_emp).strip() in ('', 'null', 'undefined'):
+            employee_id = generate_unique_identifier(tenant_db, 'TEACHER')
+        else:
+            employee_id = str(raw_emp).strip()
+            if TeacherProfile.objects.using(tenant_db).filter(employee_id__iexact=employee_id).exists():
+                raise ValidationError({"employee_id": f"Employee ID '{employee_id}' is already assigned to another teacher."})
+    elif role == 'STAFF':
+        raw_emp = data.get('employee_id')
+        if not raw_emp or str(raw_emp).strip() in ('', 'null', 'undefined'):
+            employee_id = generate_unique_identifier(tenant_db, 'STAFF')
+        else:
+            employee_id = str(raw_emp).strip()
+            if StaffProfile.objects.using(tenant_db).filter(employee_id__iexact=employee_id).exists():
+                raise ValidationError({"employee_id": f"Employee ID '{employee_id}' is already assigned to another staff member."})
+
+    try:
+        with transaction.atomic(using=tenant_db):
+            # 1. Create User
+            user = User(
+                email=email,
+                username=clean_username,
+                full_name=data['full_name'],
+                avatar=data.get('avatar') or None,
+                dob=data.get('dob') or None,
+                nationality=data.get('nationality') or None,
+                date_of_joining=data.get('date_of_joining') or None,
+                phone=data.get('phone', ''),
+                gender=data.get('gender', None),
+                current_address=data.get('current_address', ''),
+                emergency_contact_name=data.get('emergency_contact_name', ''),
+                emergency_contact_phone=data.get('emergency_contact_phone', ''),
+                emergency_contact_relation=data.get('emergency_contact_relation', ''),
+                password_hash=make_password(password, hasher='argon2'),
+                is_active=True
             )
+            user.save(using=tenant_db)
 
-            # Atomic class enrollment if academic unit specified
-            if academic_unit_id:
-                try:
-                    unit = AcademicUnit.objects.using(tenant_db).get(id=academic_unit_id)
-                except (AcademicUnit.DoesNotExist, Exception):
-                    raise ValidationError({"academic_unit_id": "Specified academic unit does not exist."})
+            # 2. Create Membership
+            membership = Membership(
+                user=user,
+                role=role,
+                status=data.get('status', 'ACTIVE')
+            )
+            membership.save(using=tenant_db)
 
-                if not roll_number:
-                    raise ValidationError({"roll_number": "Roll number is required when assigning an academic class."})
-
-                # Check duplicate roll number collision in active enrollments
-                if StudentEnrollment.objects.using(tenant_db).filter(
-                    academic_unit=unit,
-                    roll_number=str(roll_number).strip(),
-                    enrolled_to__isnull=True
-                ).exists():
-                    raise ValidationError({"roll_number": f"Roll number '{roll_number}' is already assigned in {unit.name}."})
-
-                enrolled_from = data.get('enrolled_from') or date.today()
-                enrollment = StudentEnrollment(
+            # 3. Create Role-Specific Profile & Optional Enrollment
+            if role == 'STUDENT':
+                StudentProfile.objects.using(tenant_db).create(
                     membership=membership,
-                    academic_unit=unit,
-                    roll_number=str(roll_number).strip(),
-                    enrolled_from=enrolled_from
+                    admission_number=admission_number,
+                    dob=data.get('dob', None),
+                    guardian_name=data.get('guardian_name', ''),
+                    guardian_phone=data.get('guardian_phone', '')
                 )
-                enrollment.save(using=tenant_db)
 
-        elif role == 'TEACHER':
-            employee_id = data.get('employee_id')
-            if not employee_id or str(employee_id).strip() in ('', 'null', 'undefined'):
-                employee_id = generate_unique_identifier(tenant_db, 'TEACHER')
-            TeacherProfile.objects.using(tenant_db).create(
-                membership=membership,
-                employee_id=str(employee_id).strip(),
-                qualification=data.get('qualification', '')
-            )
-        elif role == 'STAFF':
-            employee_id = data.get('employee_id')
-            staff_type = data.get('staff_type', 'OTHER')
-            if not employee_id or str(employee_id).strip() in ('', 'null', 'undefined'):
-                employee_id = generate_unique_identifier(tenant_db, 'STAFF')
-            if staff_type not in ('FINANCE', 'RECEPTION', 'LIBRARY', 'OTHER'):
-                raise ValidationError({"staff_type": "Invalid staff_type."})
-            StaffProfile.objects.using(tenant_db).create(
-                membership=membership,
-                employee_id=str(employee_id).strip(),
-                staff_type=staff_type,
-                department=data.get('department', ''),
-                designation=data.get('designation', '')
-            )
+                # Atomic class enrollment if academic unit specified
+                if academic_unit_id:
+                    try:
+                        unit = AcademicUnit.objects.using(tenant_db).get(id=academic_unit_id)
+                    except (AcademicUnit.DoesNotExist, Exception):
+                        raise ValidationError({"academic_unit_id": "Specified academic unit does not exist."})
 
-        return membership
+                    if not roll_number:
+                        raise ValidationError({"roll_number": "Roll number is required when assigning an academic class."})
+
+                    # Check duplicate roll number collision in active enrollments
+                    if StudentEnrollment.objects.using(tenant_db).filter(
+                        academic_unit=unit,
+                        roll_number=str(roll_number).strip(),
+                        enrolled_to__isnull=True
+                    ).exists():
+                        raise ValidationError({"roll_number": f"Roll number '{roll_number}' is already assigned in {unit.name}."})
+
+                    enrolled_from = data.get('enrolled_from') or date.today()
+                    enrollment = StudentEnrollment(
+                        membership=membership,
+                        academic_unit=unit,
+                        roll_number=str(roll_number).strip(),
+                        enrolled_from=enrolled_from
+                    )
+                    enrollment.save(using=tenant_db)
+
+            elif role == 'TEACHER':
+                TeacherProfile.objects.using(tenant_db).create(
+                    membership=membership,
+                    employee_id=employee_id,
+                    qualification=data.get('qualification', '')
+                )
+            elif role == 'STAFF':
+                staff_type = data.get('staff_type', 'OTHER')
+                if staff_type not in ('FINANCE', 'RECEPTION', 'LIBRARY', 'OTHER'):
+                    raise ValidationError({"staff_type": "Invalid staff_type."})
+                StaffProfile.objects.using(tenant_db).create(
+                    membership=membership,
+                    employee_id=employee_id,
+                    staff_type=staff_type,
+                    department=data.get('department', ''),
+                    designation=data.get('designation', '')
+                )
+
+            return membership
+    except IntegrityError as exc:
+        raw_msg = str(exc)
+        lower_msg = raw_msg.lower()
+        if 'email' in lower_msg:
+            raise ValidationError({"email": "A user with this email address already exists."})
+        elif 'username' in lower_msg:
+            raise ValidationError({"username": "This username is already taken."})
+        elif 'admission_number' in lower_msg:
+            raise ValidationError({"admission_number": "This admission number is already assigned to another student."})
+        elif 'employee_id' in lower_msg:
+            raise ValidationError({"employee_id": "This employee ID is already assigned."})
+        elif 'roll_number' in lower_msg:
+            raise ValidationError({"roll_number": "This roll number is already assigned in this class or section."})
+        raise ValidationError({"non_field_errors": ["A record with conflicting unique information already exists."]})
 
 
 def update_user_profile(tenant_db: str, user: User, validated_data: dict) -> User:
@@ -344,18 +390,19 @@ def update_user_by_admin(tenant_db: str, user_id: str, data: dict) -> User:
         # Update profile if applicable
         membership = getattr(user, 'membership', None)
         if membership:
-            if membership.role == 'STUDENT' and hasattr(membership, 'student_profile'):
-                prof = membership.student_profile
-                if 'admission_number' in data and data['admission_number']:
-                    adm_no = str(data['admission_number']).strip()
-                    if StudentProfile.objects.using(tenant_db).filter(admission_number=adm_no).exclude(id=prof.id).exists():
-                        raise ValidationError({"admission_number": f"Admission number '{adm_no}' is already in use."})
-                    prof.admission_number = adm_no
-                if 'guardian_name' in data:
-                    prof.guardian_name = data['guardian_name']
-                if 'guardian_phone' in data:
-                    prof.guardian_phone = data['guardian_phone']
-                prof.save(using=tenant_db)
+            if membership.role == 'STUDENT':
+                prof = StudentProfile.objects.using(tenant_db).filter(membership=membership).first()
+                if prof:
+                    if 'admission_number' in data and data['admission_number']:
+                        adm_no = str(data['admission_number']).strip()
+                        if StudentProfile.objects.using(tenant_db).filter(admission_number=adm_no).exclude(id=prof.id).exists():
+                            raise ValidationError({"admission_number": f"Admission number '{adm_no}' is already in use."})
+                        prof.admission_number = adm_no
+                    if 'guardian_name' in data:
+                        prof.guardian_name = data['guardian_name']
+                    if 'guardian_phone' in data:
+                        prof.guardian_phone = data['guardian_phone']
+                    prof.save(using=tenant_db)
 
                 # Check if academic unit or roll number was provided in update
                 target_unit_id = data.get('academic_unit_id')
@@ -410,28 +457,32 @@ def update_user_by_admin(tenant_db: str, user_id: str, data: dict) -> User:
                                 roll_number=effective_roll,
                                 enrolled_from=date.today()
                             )
-            elif membership.role == 'TEACHER' and hasattr(membership, 'teacher_profile'):
-                prof = membership.teacher_profile
-                if 'employee_id' in data and data['employee_id']:
-                    emp_id = str(data['employee_id']).strip()
-                    if TeacherProfile.objects.using(tenant_db).filter(employee_id=emp_id).exclude(id=prof.id).exists():
-                        raise ValidationError({"employee_id": f"Employee ID '{emp_id}' is already in use."})
-                    prof.employee_id = emp_id
-                if 'qualification' in data:
-                    prof.qualification = data['qualification']
-                prof.save(using=tenant_db)
-            elif membership.role == 'STAFF' and hasattr(membership, 'staff_profile'):
-                prof = membership.staff_profile
-                if 'employee_id' in data and data['employee_id']:
-                    emp_id = str(data['employee_id']).strip()
-                    if StaffProfile.objects.using(tenant_db).filter(employee_id=emp_id).exclude(id=prof.id).exists():
-                        raise ValidationError({"employee_id": f"Employee ID '{emp_id}' is already in use."})
-                    prof.employee_id = emp_id
-                if 'staff_type' in data and data['staff_type']:
-                    prof.staff_type = data['staff_type']
-                if 'department' in data:
-                    prof.department = data['department']
-                if 'designation' in data:
+            elif membership.role == 'TEACHER':
+                prof = TeacherProfile.objects.using(tenant_db).filter(membership=membership).first()
+                if prof:
+                    if 'employee_id' in data and data['employee_id']:
+                        emp_id = str(data['employee_id']).strip()
+                        if TeacherProfile.objects.using(tenant_db).filter(employee_id=emp_id).exclude(id=prof.id).exists():
+                            raise ValidationError({"employee_id": f"Employee ID '{emp_id}' is already in use."})
+                        prof.employee_id = emp_id
+                    if 'qualification' in data:
+                        prof.qualification = data['qualification']
+                    prof.save(using=tenant_db)
+            elif membership.role == 'STAFF':
+                prof = StaffProfile.objects.using(tenant_db).filter(membership=membership).first()
+                if prof:
+                    if 'employee_id' in data and data['employee_id']:
+                        emp_id = str(data['employee_id']).strip()
+                        if StaffProfile.objects.using(tenant_db).filter(employee_id=emp_id).exclude(id=prof.id).exists():
+                            raise ValidationError({"employee_id": f"Employee ID '{emp_id}' is already in use."})
+                        prof.employee_id = emp_id
+                    if 'staff_type' in data and data['staff_type']:
+                        prof.staff_type = data['staff_type']
+                    if 'department' in data:
+                        prof.department = data['department']
+                    if 'designation' in data:
+                        prof.designation = data['designation']
+                    prof.save(using=tenant_db)
                     prof.designation = data['designation']
                 prof.save(using=tenant_db)
 

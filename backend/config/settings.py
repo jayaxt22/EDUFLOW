@@ -8,9 +8,11 @@ from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
 
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment from backend/.env if present, then cwd .env
+load_dotenv(BASE_DIR / '.env')
+load_dotenv()
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'eduflow-insecure-development-secret-key-change-in-prod')
 

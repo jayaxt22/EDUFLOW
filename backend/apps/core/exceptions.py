@@ -6,6 +6,8 @@ Ensures consistent API error structures across all endpoints.
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
 from rest_framework import status
+from django.db import IntegrityError
+from django.core.exceptions import ValidationError as DjangoValidationError
 import logging
 
 logger = logging.getLogger('eduflow.errors')
@@ -56,6 +58,62 @@ def custom_exception_handler(exc, context):
         }
         response.data = custom_data
         return response
+
+    # Handle database uniqueness / integrity constraint violations
+    if isinstance(exc, IntegrityError):
+        raw_msg = str(exc)
+        lower_msg = raw_msg.lower()
+        field = 'non_field_errors'
+        friendly_msg = "A record with this identifier or unique value already exists."
+
+        if 'email' in lower_msg:
+            field = 'email'
+            friendly_msg = "A user with this email address already exists."
+        elif 'username' in lower_msg:
+            field = 'username'
+            friendly_msg = "This username is already taken."
+        elif 'admission_number' in lower_msg:
+            field = 'admission_number'
+            friendly_msg = "This admission number is already assigned to another student."
+        elif 'employee_id' in lower_msg:
+            field = 'employee_id'
+            friendly_msg = "This employee ID is already assigned."
+        elif 'roll_number' in lower_msg:
+            field = 'roll_number'
+            friendly_msg = "This roll number is already assigned in this class or section."
+        elif 'foreign key' in lower_msg:
+            friendly_msg = "Referenced related entity does not exist."
+
+        logger.warning(f"IntegrityError intercepted: {raw_msg} -> 400 Bad Request ({field}: {friendly_msg})")
+        return Response({
+            "success": False,
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": friendly_msg,
+                "details": {field: [friendly_msg]}
+            }
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # Handle Django model validation errors
+    if isinstance(exc, DjangoValidationError):
+        if hasattr(exc, 'message_dict'):
+            details = exc.message_dict
+            message = "; ".join(f"{k}: {', '.join(v)}" for k, v in details.items())
+        elif hasattr(exc, 'messages'):
+            details = {"non_field_errors": list(exc.messages)}
+            message = "; ".join(exc.messages)
+        else:
+            details = {"non_field_errors": [str(exc)]}
+            message = str(exc)
+
+        return Response({
+            "success": False,
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": message,
+                "details": details
+            }
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     # Unhandled exception
     view_name = context.get('view', 'unknown')
